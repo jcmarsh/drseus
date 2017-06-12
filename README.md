@@ -20,10 +20,10 @@ Use arguments in files by prefixing with "@", for example: "drseus.py @conf/samp
 
 Example:
 
-* drseus.py new ppc_fi_2d_conv_fft_omp -s -a "lena.bmp out.bmp" -f lena.bmp -o out.bmp
+* drseus.py new ppc fi 2d conv fft omp -s -a "lena.bmp out.bmp" -f lena.bmp -o out.bmp
     * Creates a Simics fault-injection campaign
-    * Sends binary file "ppc_fi_2d_conv_fft_omp" and input file "lena.bmp" to the device under test
-    * Runs "ppc_fi_2d_conv_fft_omp lena.bmp out.bmp" on the device under test
+    * Sends binary file "ppc fi 2d conv fft omp" and input file "lena.bmp" to the device under test
+    * Runs "ppc fi 2d conv fft omp lena.bmp out.bmp" on the device under test
     * Checks for output file "out.bmp"
 * drseus.py inject -n 100 -p 8
     * Performs 100 injection iterations using 8 processes
@@ -31,4 +31,4 @@ Example:
     * Starts log server
     * Navigate to http://localhost:8000 in your web browser
 
-Before using DrSEUs for the first time, you must first run "scripts/install_dependencies.sh" then run "scripts/setup_environment.sh"
+Before using DrSEUs for the first time, you must first run "scripts/install dependencies.sh" then run "scripts/setup environment.sh"
