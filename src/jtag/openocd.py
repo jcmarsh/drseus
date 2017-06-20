@@ -1,3 +1,4 @@
+import subprocess
 from json import load
 from os.path import abspath, dirname, exists
 from subprocess import DEVNULL, Popen, TimeoutExpired
@@ -23,6 +24,8 @@ class openocd(jtag):
 
     def __init__(self, database, options, power_switch):
         self.power_switch = power_switch
+	#RG used for our own configuration
+        self.bbzybo = 1
         if exists('devices.json'):
             with open('devices.json', 'r') as device_file:
                 device_info = load(device_file)
@@ -47,9 +50,11 @@ class openocd(jtag):
                     print('could not find device information file, '
                           'unpredictable behavior if multiple ZedBoards are '
                           'connected')
-        options.debugger_ip_address = '127.0.0.1'
+        #RG options.debugger_ip_address = '127.0.0.1'
+        options.debugger_ip_address = '192.168.7.2'
         self.prompts = ['>']
-        self.port = find_open_port()
+        #RG self.port = find_open_port()
+        self.port = 4444
         super().__init__(database, options)
         self.set_targets()
         if self.options.command == 'openocd' and self.options.gdb:
@@ -113,6 +118,11 @@ class openocd(jtag):
                 super().reset_dut(
                     ['JTAG tap: zynq.dap tap/device found: 0x4ba00477'],
                     max(attempts-1, 1))
+        elif self.bbzybo:
+            p = subprocess.Popen('cd ../scripts/;./reboot.sh', shell=True)
+            # Wait until the subprocess is done to continue!
+            p.communicate()
+            self.open()
         else:
             super().reset_dut(
                 ['JTAG tap: zynq.dap tap/device found: 0x4ba00477'], attempts)
@@ -154,13 +164,18 @@ class openocd(jtag):
         event.save()
 
     def halt_dut(self):
-        super().halt_dut('halt', ['target state: halted']*2)
+        #super().halt_dut('halt', ['target state: halted']*2)
+        #RG we don't get this epxected outcome, so don't look for it...
+        super().halt_dut('halt', [])
 
     def continue_dut(self):
         super().continue_dut('resume')
 
     def select_core(self, core):
-        self.command('targets zynq.cpu{}'.format(core),
+        #self.command('targets zynq.cpu{}'.format(core),
+        #             error_message='Error selecting core')
+        #RG, it is not zynq.cpu0 it is zynq.cpu.0. Fix formatting
+        self.command('targets zynq.cpu.{}'.format(core),
                      error_message='Error selecting core')
 
     def get_mode(self):

@@ -31,4 +31,4 @@ Example:
     * Starts log server
     * Navigate to http://localhost:8000 in your web browser
 
-Before using DrSEUs for the first time, you must first run "scripts/install dependencies.sh" then run "scripts/setup environment.sh"
+Before using DrSEUs for the first time, you must first run "scripts/install dependencies.sh" then run "scripts/setup environment.sh" then run "./python/bin/python3 ./scripts/merge.py"

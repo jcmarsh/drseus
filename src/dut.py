@@ -15,6 +15,7 @@ from socket import AF_INET, SOCK_STREAM, socket
 from sys import stdout
 from termcolor import colored
 from time import perf_counter, sleep
+from pathlib import Path
 
 from .error import DrSEUsError
 from .timeout import timeout, TimeoutException
@@ -125,6 +126,8 @@ class dut(object):
         self.db = database
         self.options = options
         self.aux = aux
+        #RG
+        self.bbzybo = 1
         self.__start_time = None
         self.__timer_value = 0
         self.ip_address = options.dut_ip_address if not aux \
@@ -570,6 +573,8 @@ class dut(object):
                                     sleep(30)
                                 else:
                                     raise DrSEUsError('Received file not found')
+        def get_local():
+            Path('./' + local_path).touch(file_)
 
     # def get_file(self, file_, local_path='', delete=False, attempts=10):
         if self.options.debug and not quiet:
@@ -581,6 +586,8 @@ class dut(object):
             get_socket()
         elif self.options.vxworks:
             get_ftp()
+        elif self.bbzybo:
+            get_local()
         else:
             get_scp()
         return file_path

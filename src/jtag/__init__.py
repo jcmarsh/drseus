@@ -163,6 +163,9 @@ class jtag(object):
             self.dut.write('{}\n'.format(self.db.campaign.command))
         previous_injection_time = 0
         for injection in injections:
+            #RG
+            if injection.target_index:
+                continue
             if injection.target in ('CPU', 'GPR', 'TLB') or \
                 ('CP' in self.targets[injection.target] and
                     self.targets[injection.target]['CP']):
