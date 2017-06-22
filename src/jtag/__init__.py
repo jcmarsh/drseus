@@ -51,6 +51,7 @@ def find_open_port():
 class jtag(object):
     def __init__(self, database, options):
         self.db = database
+        self.bbzybo = 1
         self.options = options
         self.timeout = 30
         self.prompts = [bytes(prompt, encoding='utf-8')
@@ -163,9 +164,6 @@ class jtag(object):
             self.dut.write('{}\n'.format(self.db.campaign.command))
         previous_injection_time = 0
         for injection in injections:
-            #RG
-            if injection.target_index:
-                continue
             if injection.target in ('CPU', 'GPR', 'TLB') or \
                 ('CP' in self.targets[injection.target] and
                     self.targets[injection.target]['CP']):

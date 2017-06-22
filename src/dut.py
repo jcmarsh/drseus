@@ -1,3 +1,4 @@
+import subprocess
 from datetime import datetime
 from difflib import SequenceMatcher
 from ftplib import FTP
@@ -593,7 +594,12 @@ class dut(object):
         return file_path
 
     def write(self, string):
-        self.serial.write(bytes(string, encoding='utf-8'))
+        if self.bbzybo:
+            p = subprocess.Popen('cd ../scripts/;./start.sh', shell=True)
+            p.communicate()
+            p.kill()
+        else:
+            self.serial.write(bytes(string, encoding='utf-8'))
         self.start_timer()
 
     def read_until(self, string=None, continuous=False, boot=False, flush=True):

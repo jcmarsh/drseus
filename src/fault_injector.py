@@ -16,6 +16,7 @@ from .simics import simics
 class fault_injector(object):
     def __init__(self, options, power_switch=None):
         self.options = options
+        self.bbzybo  = 1
         self.db = database(options)
         if self.db.campaign.simics and self.db.campaign.architecture in \
                 ['a9', 'p2020']:
@@ -298,6 +299,7 @@ class fault_injector(object):
                             iteration_counter.value -= 1
                         else:
                             break
+                print("Remaining iterations: " + str(iteration_counter.value))
                 self.db.result.num_injections = self.options.injections
                 if not self.db.campaign.simics:
                     if self.options.command == 'inject':
