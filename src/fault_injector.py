@@ -164,11 +164,12 @@ class fault_injector(object):
             else:
                 self.debugger.dut.get_file(
                     self.db.campaign.output_file, gold_folder)
-                self.debugger.dut.command('rm {}'.format(
-                    self.db.campaign.output_file))
+                if not self.bbzybo:
+                    self.debugger.dut.command('rm {}'.format(
+                        self.db.campaign.output_file))
         for log_file in self.db.campaign.log_files:
             self.debugger.dut.get_file(log_file, gold_folder)
-            if not log_file.startswith('/'):
+            if not log_file.startswith('/') and not self.bbzybo:
                 self.debugger.dut.command('rm {}'.format(log_file))
         if self.db.campaign.aux:
             for log_file in self.db.campaign.aux_log_files:

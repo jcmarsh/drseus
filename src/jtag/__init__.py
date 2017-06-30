@@ -66,8 +66,18 @@ class jtag(object):
         return string
 
     def connect_telnet(self):
-        self.telnet = Telnet(self.options.debugger_ip_address, self.port,
-                             timeout=self.timeout)
+        try:
+            self.telnet = Telnet(self.options.debugger_ip_address, self.port,
+                                 timeout=self.timeout)
+        except ConnectionRefusedError:
+            attempt = 0
+            while attempt < 3:
+                attempt += 1;
+                print("Connection to Telnet refused, retrying...")
+                self.telnet = Telnet(self.options.debugger_ip_address, self.port,
+                                     timeout=self.timeout)
+                if self.telnet:
+                    break;
         self.db.log_event(
             'Information', 'Debugger', 'Connected to telnet',
             '{}:{}'.format(self.options.debugger_ip_address, self.port))

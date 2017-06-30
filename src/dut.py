@@ -1,5 +1,7 @@
 import subprocess
+import os
 from datetime import datetime
+import os
 from difflib import SequenceMatcher
 from ftplib import FTP
 from io import StringIO
@@ -575,7 +577,17 @@ class dut(object):
                                 else:
                                     raise DrSEUsError('Received file not found')
         def get_local():
-            Path('./' + local_path).touch(file_)
+            local_path = os.getcwd() + '/';
+            os.rename(local_path + file_, file_path)
+            if exists(file_path):
+                if self.options.debug and not quiet:
+                    print(colored('done', 'blue'))
+                self.db.log_event(
+                    'Information',
+                    'DUT' if not self.aux else 'AUX',
+                    'Received file using local host', file_)
+            else:
+                print(colored("File doesn't exist!", 'red'))
 
     # def get_file(self, file_, local_path='', delete=False, attempts=10):
         if self.options.debug and not quiet:
@@ -745,6 +757,11 @@ class dut(object):
         if boot:
             self.db.log_event(
                 'Information', 'DUT' if not self.aux else 'AUX', 'Booted')
+        if self.bbzybo:
+            log = open("./output.txt", 'w', 1)
+            log.write(buff)
+            log.flush()
+            log.close()
         return buff, returned
 
     def command(self, command='', flush=True, attempts=5):
@@ -845,7 +862,10 @@ class dut(object):
         local_diff = \
             hasattr(self.options, 'local_diff') and self.options.local_diff
         try:
-            directory_listing = self.command('ls -l')[0]
+            if self.bbzybo:
+                directory_listing = os.listdir("./")
+            else:
+                directory_listing = self.command('ls -l')[0]
         except DrSEUsError as error:
             self.db.result.outcome_category = 'Post execution error'
             self.db.result.outcome = error.type
@@ -902,7 +922,8 @@ class dut(object):
             else:
                 self.db.result.outcome = 'Silent data error'
         try:
-            self.command('rm {}'.format(self.db.campaign.output_file))
+            if not self.bbzybo:
+                self.command('rm {}'.format(self.db.campaign.output_file))
         except DrSEUsError as error:
             self.db.result.outcome_category = 'Post execution error'
             self.db.result.outcome = error.type
