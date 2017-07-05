@@ -11,15 +11,18 @@ from .jtag.bdi import bdi
 from .jtag.dummy import dummy
 from .jtag.openocd import openocd
 from .simics import simics
-from .sqlite_database import sqlite_database
+from .sqlite_database import sqlite_database, print_sqlite_database
 
+from .sqlite_test import run_sqlite_tests
 
 class fault_injector(object):
     def __init__(self, options, power_switch=None):
         self.options = options
         self.bbzybo  = 1
         self.db = database(options)
-        self.sqlite = sqlite_database(options)
+        #Testing
+        run_sqlite_tests(options)
+        #self.sqlite = sqlite_database(options)
         if self.db.campaign.simics and self.db.campaign.architecture in \
                 ['a9', 'p2020']:
             self.debugger = simics(self.db, options)
