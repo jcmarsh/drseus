@@ -1,7 +1,10 @@
+import subprocess
+import re
 from os import makedirs, remove
 from os.path import isfile
 from termcolor import colored, cprint
 from sqlite3 import connect
+from .dut import dut
 
 from .database import get_campaign
 
@@ -9,9 +12,79 @@ def delete_sqlite_database(sqlite_database):
     cprint("Removing " + sqlite_database.database, 'red')
     remove(sqlite_database.database)
 
-def assembly_golden_run(sqlite_database):
-    #TODO
-    pass
+def assembly_golden_run(sqlite_database, dut):
+    cprint("Running assembly golden run", 'yellow')
+    # Get assembly instrucitons into raw files
+    p = subprocess.Popen('cd ../scripts/;./start_asm_golden_run.sh', shell=True)
+    p.communicate()
+    p.kill()
+    cprint("Begin parsing, this may take a few minutes...", 'yellow')
+    cprint("\tStoring load and store instructions...", 'yellow')
+    with open("../etc/ldstr.txt") as ldstr:
+        for line in ldstr:
+
+            inst_addr = subprocess.check_output("echo " + "\"" + str(line) + "\"" + " | awk '{ print $1 }'", shell=True)
+            inst_addr = str(inst_addr).lstrip("b\'")
+            inst_addr = str(inst_addr).rstrip(":\\n\\n\'")
+            #print(inst_addr)
+
+            cache = -1
+            cycles = -1
+
+            ldstr_str = subprocess.check_output("echo " + "\"" + str(line) + "\"" + " | awk '{ print $3 }'", shell=True)
+            ldstr_str = str(ldstr_str).lstrip("b\'")
+            ldstr_str = str(ldstr_str).rstrip(":\\n\\n\'")
+            #TODO add in check to make sure the command always starts with st or ld
+            if re.match('st', ldstr_str) is not None:
+                ldstr = 1
+            else:
+                ldstr = 0
+            #print(ldstr_str + ", value is: " + str(ldstr))
+
+            ldstr_addr = -1
+
+            sqlite_database.log_ldstr(inst_addr, cache, cycles, ldstr, ldstr_addr)
+    cprint("\tStoring branch instructions...", 'yellow')
+    with open("../etc/branch.txt") as ldstr:
+        for line in ldstr:
+
+            inst_addr = subprocess.check_output("echo " + "\"" + str(line) + "\"" + " | awk '{ print $1 }'", shell=True)
+            inst_addr = str(inst_addr).lstrip("b\'")
+            inst_addr = str(inst_addr).rstrip(":\\n\\n\'")
+            #print(inst_addr)
+
+            inst_name = subprocess.check_output("echo " + "\"" + str(line) + "\"" + " | awk '{ print $3 }'", shell=True)
+            inst_name = str(inst_name)[2:-5]
+            #print(inst_name)
+
+            sqlite_database.log_branch(inst_addr, inst_name)
+
+
+    print_sqlite_database(sqlite_database)
+    cprint("Done", 'yellow')
+
+    cprint("Transfering database to embedded board...", 'yellow')
+    cprint("\tGetting username and ip...", 'yellow')
+
+    username = subprocess.check_output("cat ../login_info | awk -F = '/user/{ print $2 }'", shell=True)
+    username = str(username)[2:-3]
+    cprint("\t\tusername: " + username, 'yellow')
+
+    ip = subprocess.check_output("cat ../login_info" + " | awk -F = '/ip/{ print $2 }'", shell=True)
+    ip = str(ip)[2:-3]
+    cprint("\t\tip: " + ip, 'yellow')
+
+    localpath = sqlite_database.database
+    p = subprocess.Popen("scp " + localpath + " " + username + "@" + ip + ":~/jtag_eval/openOCD_cfg/mnt", shell=True)
+    p.communicate()
+    p.kill()
+
+    # Run on the database
+    command = " 'cd ./jtag_eval/openOCD_cfg/mnt;python ./asm_golden_run.py'"
+    p = subprocess.Popen("ssh " + username + "@" + ip + command, shell=True)
+    # Run until program is done
+    dut.read_until()
+    p.kill()
 
 def print_sqlite_database(sqlite_database):
     conn = connect(sqlite_database.database)
@@ -77,42 +150,46 @@ class sqlite_database(object):
     def __initialize_database(self):
         print(colored("\tInitializing database...", 'yellow'))
 
-        # Fields for the Assmbly table
-        self.asm_tbl         = "assembly_table"
+	# TODO
+        self.branch_tbl      = "branch_table"
         self.address_col     = "address" # PRIMARY KEY
-        address_type         = "INTEGER"
-        self.list_cycles_col = "cycles_list"
-        list_cycles_type     = "TEXT"
+        address_type         = "TEXT"
+        self.inst_name_col   = "instruction_name"
+        inst_name_type       = "TEXT"
 
         # Fields for the load / store table
         self.ldstr_tbl      = "loadstore_table"
+        # This table too uses address columns
+       #self.address_col    = "address" # PRIMARY KEY
+       #address_type        = "INTEGER"
         self.cache_col      = "cache_line"
         cache_type          = "INTEGER"
-        self.cycle_col      = "cycles"
-        cycle_type          = "INTEGER"
-        self.ldstr_col      = "load_or_store"
+        self.cycles_col     = "cycles"
+        cycles_type         = "BLOB"
+        self.ldstr_col      = "load0_store1"
         ldstr_type          = "INTEGER"
         self.ldstr_addr_col = "loadstore_address"
-        ldstr_addr_type     = "INTEGER"
+        ldstr_addr_type     = "TEXT"
 
         #Save the tables in a list to make printing and changing the database easier
-        self.table_list = [self.asm_tbl, self.ldstr_tbl]
+        self.table_list = [self.branch_tbl, self.ldstr_tbl]
 
         conn = connect(self.database)
         c = conn.cursor()
 
         # Add to database
         c.execute('CREATE TABLE {tn} ({c1} {t1} PRIMARY KEY, {c2} {t2})'\
-            .format(tn=self.asm_tbl,\
+            .format(tn=self.branch_tbl,\
             c1=self.address_col, t1=address_type,\
-            c2=self.list_cycles_col, t2=list_cycles_type))
+            c2=self.inst_name_col, t2=inst_name_type))
 
-        c.execute('CREATE TABLE {tn} ({c1} {t1}, {c2} {t2} PRIMARY KEY, {c3} {t3}, {c4} {t4})'\
+        c.execute('CREATE TABLE {tn} ({c1} {t1} PRIMARY KEY, {c2} {t2}, {c3} {t3}, {c4} {t4}, {c5} {t5})'\
             .format(tn=self.ldstr_tbl,\
-            c1=self.cache_col, t1=cache_type,\
-            c2=self.cycle_col, t2=cycle_type,\
-            c3=self.ldstr_col, t3=ldstr_type,\
-            c4=self.ldstr_addr_col, t4=ldstr_addr_type))
+            c1=self.address_col, t1=address_type,\
+            c2=self.cache_col, t2=cache_type,\
+            c3=self.cycles_col, t3=cycles_type,\
+            c4=self.ldstr_col, t4=ldstr_type,\
+            c5=self.ldstr_addr_col, t5=ldstr_addr_type))
 
         conn.commit()
         conn.close()
@@ -121,32 +198,44 @@ class sqlite_database(object):
         #TODO
         pass
 
-    def log_asm(self, address, cycles):
-        #TODO
-        # Modify the Assembly Table
-        # Search to see if address already is in the assembly table
-        # If it is, update cycle list to contain the new entry
-        # If it is not, add the new entry
-        pass
-
-    def log_ldstr(self, cache, cycles, ldstr, ldstr_addr):
-        # Modify the Load/Store Table
+    def log_branch(self, inst_addr, inst_name):
         conn = connect(self.database)
         c = conn.cursor()
 
         # Make sure that cycles is unique
-        c.execute("SELECT * FROM {tn} WHERE {cn}=({val})"\
-             .format(tn=self.ldstr_tbl, cn=self.cycle_col, val=cycles))
+        c.execute("SELECT * FROM {tn} WHERE {cn}=('{val}')"\
+             .format(tn=self.branch_tbl, cn=self.address_col, val=str(inst_addr)))
         if c.fetchone() != None:
             conn.close()
-            cprint("Conflict in log_ldstr, cycles collision", 'red')
+            cprint("Conflict in log_branch, primary key instruction address collision", 'red')
             cprint("Exiting")
             exit()
 
-        c.execute("INSERT INTO {tn} ({c1}, {c2}, {c3}, {c4}) VALUES ({t1}, {t2}, {t3}, {t4})"
-            .format(tn=self.ldstr_tbl,
-            c1=self.cache_col, c2=self.cycle_col, c3=self.ldstr_col, c4=self.ldstr_addr_col,\
-            t1=cache, t2=cycles, t3=ldstr, t4=ldstr_addr))
+        c.execute("INSERT INTO {tn} ({c1}, {c2}) VALUES ('{t1}', '{t2}')"
+             .format(tn=self.branch_tbl,
+             c1=self.address_col, c2=self.inst_name_col, \
+             t1=str(inst_addr), t2=str(inst_name)))
+
+        conn.commit()
+        conn.close()
+
+    def log_ldstr(self, inst_addr, cache, cycles, ldstr, ldstr_addr):
+        conn = connect(self.database)
+        c = conn.cursor()
+
+        # Make sure that cycles is unique
+        c.execute("SELECT * FROM {tn} WHERE {cn}=('{val}')"\
+             .format(tn=self.ldstr_tbl, cn=self.address_col, val=str(inst_addr)))
+        if c.fetchone() != None:
+            conn.close()
+            cprint("Conflict in log_ldstr, primary key instruction address collision", 'red')
+            cprint("Exiting")
+            exit()
+
+        c.execute("INSERT INTO {tn} ({c1}, {c2}, {c3}, {c4}, {c5}) VALUES ('{t1}', {t2}, {t3}, {t4}, '{t5}')"
+             .format(tn=self.ldstr_tbl,
+             c1=self.address_col, c2=self.cache_col, c3=self.cycles_col, c4=self.ldstr_col, c5=self.ldstr_addr_col,\
+             t1=str(inst_addr), t2=cache, t3=cycles, t4=ldstr, t5=str(ldstr_addr)))
 
         conn.commit()
         conn.close()

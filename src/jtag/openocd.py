@@ -50,7 +50,7 @@ class openocd(jtag):
                     print('could not find device information file, '
                           'unpredictable behavior if multiple ZedBoards are '
                           'connected')
-        #RG options.debugger_ip_address = '127.0.0.1'
+        #options.debugger_ip_address = '127.0.0.1'
         options.debugger_ip_address = '192.168.7.2'
         self.prompts = ['>']
         #RG self.port = find_open_port()
@@ -120,7 +120,6 @@ class openocd(jtag):
                     max(attempts-1, 1))
         elif self.bbzybo:
             p = subprocess.Popen('cd ../scripts/;./reboot.sh', shell=True)
-            # Wait until the subprocess is done to continue!
             p.communicate()
             self.open()
         else:

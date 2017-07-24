@@ -11,7 +11,7 @@ from .jtag.bdi import bdi
 from .jtag.dummy import dummy
 from .jtag.openocd import openocd
 from .simics import simics
-from .sqlite_database import sqlite_database, print_sqlite_database
+from .sqlite_database import sqlite_database, print_sqlite_database, assembly_golden_run
 
 from .sqlite_test import run_sqlite_tests
 
@@ -21,8 +21,8 @@ class fault_injector(object):
         self.bbzybo  = 1
         self.db = database(options)
         #Testing
-        run_sqlite_tests(options)
-        #self.sqlite = sqlite_database(options)
+        #run_sqlite_tests(options)
+        self.sqlite = sqlite_database(options)
         if self.db.campaign.simics and self.db.campaign.architecture in \
                 ['a9', 'p2020']:
             self.debugger = simics(self.db, options)
@@ -153,8 +153,12 @@ class fault_injector(object):
         if self.db.campaign.command or self.db.campaign.simics:
             if self.db.campaign.simics:
                 self.debugger.launch_simics()
+            print("\tResetting DUT")
             self.debugger.reset_dut()
+            print("\tDone Resetting DUT")
+            print("\tTiming application")
             time_application()
+            print("\tDone timing appliaction")
         if not self.db.campaign.command:
             self.db.campaign.execution_time = self.options.delay
             sleep(self.db.campaign.execution_time)
@@ -185,6 +189,10 @@ class fault_injector(object):
             rmtree(gold_folder)
         self.db.campaign.timestamp = datetime.now()
         self.db.campaign.save()
+
+        if self.bbzybo:
+            self.debugger.reset_dut()
+            assembly_golden_run(self.sqlite, self.debugger.dut)
         self.close()
 
     def inject_campaign(self, iteration_counter=None, timer=None):

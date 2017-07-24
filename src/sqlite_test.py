@@ -17,8 +17,8 @@ def test_log_ldstr(sqlite_database):
     cprint("Calling log_ldstr", 'cyan')
     sqlite_database.log_ldstr(cache_section, cycles, ldstr, ldstr_addr)
     print_sqlite_database(sqlite_database)
-    cprint("Calling log_ldstr again with the same values, expect exit", 'cyan')
-    sqlite_database.log_ldstr(cache_section, cycles, ldstr, ldstr_addr)
+    #cprint("Calling log_ldstr again with the same values, expect exit", 'cyan')
+    #sqlite_database.log_ldstr(cache_section, cycles, ldstr, ldstr_addr)
 
 def run_sqlite_tests(options):
 
