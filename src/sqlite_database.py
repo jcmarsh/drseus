@@ -5,6 +5,7 @@ from os.path import isfile
 from termcolor import colored, cprint
 from sqlite3 import connect
 from .dut import dut
+from time import sleep
 
 from .database import get_campaign
 
@@ -79,9 +80,20 @@ def assembly_golden_run(sqlite_database, dut):
     p.communicate()
     p.kill()
 
+    # Let Zybo run until control is read
+    p = subprocess.Popen('cd ../scripts/;./start.sh', shell=True)
+    dut.read_until("control ", False, False, True)
+    p.kill()
+
+    # Halt Zybo from running any further
+    p = subprocess.Popen('cd ../scripts/;./halt.sh', shell=True)
+    sleep(1)
+    p.communicate()
+    p.kill()
+
     # Run on the database
     command = " 'cd ./jtag_eval/openOCD_cfg/mnt;python ./asm_golden_run.py'"
-    p = subprocess.Popen("ssh " + username + "@" + ip + command, shell=True)
+    p = subprocess.Popen("x-terminal-emulator -e \"ssh " + username + "@" + ip + command + "\"", shell=True)
     # Run until program is done
     dut.read_until()
     p.kill()
@@ -150,7 +162,6 @@ class sqlite_database(object):
     def __initialize_database(self):
         print(colored("\tInitializing database...", 'yellow'))
 
-	# TODO
         self.branch_tbl      = "branch_table"
         self.address_col     = "address" # PRIMARY KEY
         address_type         = "TEXT"
@@ -160,8 +171,8 @@ class sqlite_database(object):
         # Fields for the load / store table
         self.ldstr_tbl      = "loadstore_table"
         # This table too uses address columns
-       #self.address_col    = "address" # PRIMARY KEY
-       #address_type        = "INTEGER"
+        #self.address_col   = "address" # PRIMARY KEY
+        #address_type       = "INTEGER"
         self.cache_col      = "cache_line"
         cache_type          = "INTEGER"
         self.cycles_col     = "cycles"
