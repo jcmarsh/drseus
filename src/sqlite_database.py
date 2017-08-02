@@ -5,7 +5,6 @@ from os.path import isfile
 from termcolor import colored, cprint
 from sqlite3 import connect
 from .dut import dut
-from time import sleep
 
 from .database import get_campaign
 
@@ -83,12 +82,9 @@ def assembly_golden_run(sqlite_database, dut):
     # Let Zybo run until control is read
     p = subprocess.Popen('cd ../scripts/;./start.sh', shell=True)
     dut.read_until("control ", False, False, True)
-    p.kill()
 
     # Halt Zybo from running any further
-    p = subprocess.Popen('cd ../scripts/;./halt.sh', shell=True)
-    sleep(1)
-    p.communicate()
+    subprocess.call('cd ../scripts/;./halt.sh', shell=True)
     p.kill()
 
     # Run on the database
@@ -176,7 +172,7 @@ class sqlite_database(object):
         self.cache_col      = "cache_line"
         cache_type          = "INTEGER"
         self.cycles_col     = "cycles"
-        cycles_type         = "BLOB"
+        cycles_type         = "TEXT"
         self.ldstr_col      = "load0_store1"
         ldstr_type          = "INTEGER"
         self.ldstr_addr_col = "loadstore_address"
