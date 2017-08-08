@@ -12,6 +12,7 @@ from .jtag.dummy import dummy
 from .jtag.openocd import openocd
 from .simics import simics
 from .sqlite_database import sqlite_database, print_sqlite_database, assembly_golden_run
+from .sqlite_injection import perform_cache_injections
 
 from .sqlite_test import run_sqlite_tests
 
@@ -20,9 +21,6 @@ class fault_injector(object):
         self.options = options
         self.bbzybo  = 1
         self.db = database(options)
-        #Testing
-        #run_sqlite_tests(options)
-        self.sqlite = sqlite_database(options)
         if self.db.campaign.simics and self.db.campaign.architecture in \
                 ['a9', 'p2020']:
             self.debugger = simics(self.db, options)
@@ -192,7 +190,8 @@ class fault_injector(object):
 
         if self.bbzybo:
             self.debugger.reset_dut()
-            assembly_golden_run(self.sqlite, self.debugger.dut)
+            assembly_golden_run(self.options.cache_sqlite, self.debugger.dut)
+            print_sqlite_database(self.options.cache_sqlite)
         self.close()
 
     def inject_campaign(self, iteration_counter=None, timer=None):
@@ -403,6 +402,8 @@ class fault_injector(object):
 
     # def inject_campaign(self, iteration_counter):
         try:
+            # Perform cache injections before regular injections
+            perform_cache_injections(self.options.cache_sqlite, self)
             perform_injections()
         except KeyboardInterrupt:
             self.db.result.outcome_category = 'Incomplete'

@@ -24,6 +24,7 @@ from .jtag.openocd import openocd
 from .power_switch import power_switch
 from .simics.config import simics_config
 from .supervisor import supervisor
+from .sqlite_database import sqlite_database, print_sqlite_database, get_database_path
 
 
 def detect_power_switch_devices(options):
@@ -246,6 +247,7 @@ def create_campaign(options):
     if exists(campaign_directory):
         raise Exception('directory already exists: {}'.format(
             campaign_directory))
+    options.cache_sqlite = sqlite_database(options)
     drseus = fault_injector(options)
     try:
         drseus.setup_campaign()
@@ -269,6 +271,10 @@ def inject_campaign(options):
     campaign = get_campaign(options)
     architecture = campaign.architecture
     simics = campaign.simics
+    print("In inject_campaign")
+    cache_sqlite_path = get_database_path(options)
+    database = sqlite_database(options, cache_sqlite_path)
+    print_sqlite_database(database)
 
     def perform_injections(iteration_counter, switch):
         drseus = fault_injector(options, switch)
