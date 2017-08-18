@@ -627,6 +627,7 @@ class dut(object):
         errors = 0
         hanging = False
         returned = False
+        print("read_until: " + str(self.options.timeout+5))
         while True:
             try:
                 with timeout(self.options.timeout+5):
