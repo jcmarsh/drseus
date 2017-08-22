@@ -609,7 +609,7 @@ class dut(object):
         if self.bbzybo:
             p = subprocess.Popen('cd ../scripts/;./start.sh', shell=True)
             p.communicate()
-            p.kill()
+            #p.kill()
         else:
             self.serial.write(bytes(string, encoding='utf-8'))
         self.start_timer()

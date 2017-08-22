@@ -22,7 +22,7 @@ def assembly_golden_run(sqlite_database, dut):
     # Get assembly instrucitons into raw files
     p = subprocess.Popen('cd ../scripts/;./start_asm_golden_run.sh', shell=True)
     p.communicate()
-    p.kill()
+    #p.kill()
     cprint("Begin parsing, this may take a few minutes...", 'yellow')
     cprint("\tStoring load and store instructions...", 'yellow')
     with open("../etc/ldstr.txt") as ldstr:
@@ -88,7 +88,7 @@ def assembly_golden_run(sqlite_database, dut):
     localpath = sqlite_database.database
     p = subprocess.Popen("scp " + localpath + " " + username + "@" + ip + ":~/jtag_eval/openOCD_cfg/mnt", shell=True)
     p.communicate()
-    p.kill()
+    #p.kill()
 
     # Let Zybo run until control is read
     p = subprocess.Popen('cd ../scripts/;./start.sh', shell=True)
@@ -97,7 +97,7 @@ def assembly_golden_run(sqlite_database, dut):
     # Halt Zybo from running any further
     subprocess.call('cd ../scripts/;./halt.sh', shell=True)
     sleep(1)
-    p.kill()
+    #p.kill()
 
     # Run on the database
     print("Running asm_golden_run.py")
@@ -112,7 +112,7 @@ def assembly_golden_run(sqlite_database, dut):
     print("Transfering back database")
     p = subprocess.Popen("scp " + username + "@" + ip + ":~/jtag_eval/openOCD_cfg/mnt/database.sqlite " + localpath, shell=True)
     p.communicate()
-    p.kill()
+    #p.kill()
 
 def print_sqlite_database(sqlite_database):
     conn = connect(sqlite_database.database)
