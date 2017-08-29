@@ -25,9 +25,10 @@ directory = dirname(abspath(__file__))
 
 
 def load_targets(architecture, type_):
-    with open(join(directory, architecture, '{}.json'.format(type_)), 'r') \
+    with open(join(directory, architecture, '{}.cache_test.json'.format(type_)), 'r') \
             as json_file:
         targets = load(json_file)
+    print("JSON file:", json_file)
     return targets
 
 
@@ -211,6 +212,8 @@ def choose_injection(targets, selected_target_indices):
             break
     else:
         raise Exception('Error choosing injection target')
+    # TODO: Use of count is here. Check selected_target_indicies - JM
+    # TODO: Shouldn't count be used as part of the bit selection? - JM
     if 'count' in target and target['count'] > 1:
         if selected_target_indices is None:
             injection['target_index'] = randrange(target['count'])

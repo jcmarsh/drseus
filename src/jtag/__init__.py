@@ -159,25 +159,37 @@ class jtag(object):
         event.save()
 
     def inject_faults(self):
+        # Select injection times
         injection_times = []
         for i in range(self.options.injections):
-            injection_times.append(uniform(0,
-                                           self.db.campaign.execution_time))
+            injection_times.append(uniform(0, self.db.campaign.execution_time))
+
+        # Select targets and injection object
         injections = []
         if hasattr(self, 'targets') and self.targets:
             for injection_time in sorted(injection_times):
-                injection = choose_injection(
-                    self.targets, self.options.selected_target_indices)
-                injection = self.db.result.injection_set.create(
-                    success=False, time=injection_time, **injection)
+                injection = choose_injection(self.targets, self.options.selected_target_indices)
+                injection = self.db.result.injection_set.create(success=False, time=injection_time, **injection)
                 injections.append(injection)
+
+        print("********************************************************************************")
+        print("Injection times:")
+        print(injection_times)
+        print("Injections:")
+        for injection in injections:
+            print("Injection:", injection.target)
+        print("Possible targets:")
+        for target in self.targets:
+            print("Target:", target)
+        print("********************************************************************************")
+
         if self.db.campaign.command:
             self.dut.write('{}\n'.format(self.db.campaign.command))
         previous_injection_time = 0
+
+        # Perform the injections
         for injection in injections:
-            if injection.target in ('CPU', 'GPR', 'TLB') or \
-                ('CP' in self.targets[injection.target] and
-                    self.targets[injection.target]['CP']):
+            if injection.target in ('CPU', 'GPR', 'TLB') or ('CP' in self.targets[injection.target] and self.targets[injection.target]['CP']):
                 self.select_core(injection.target_index)
             sleep(injection.time-previous_injection_time)
             self.halt_dut()

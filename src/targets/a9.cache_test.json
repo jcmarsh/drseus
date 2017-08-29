@@ -1,0 +1,233 @@
+{
+    "jtag": {
+        "targets": {
+            "CPU": {
+                "unused_registers": {
+                    "spsr_usr": {}
+                }
+            },
+            "FAULT": {
+                "unused_registers": {
+                    "ADFSR": {},
+                    "AIFSR": {}
+                }
+            },
+            "ID": {
+                "unused_registers": {
+                    "AIDR": {},
+                    "CCSIDR": {},
+                    "CLIDR": {},
+                    "CTR": {},
+                    "ID_AFR0": {},
+                    "ID_DFR0": {},
+                    "ID_ISAR0": {},
+                    "ID_ISAR1": {},
+                    "ID_ISAR2": {},
+                    "ID_ISAR3": {},
+                    "ID_ISAR4": {},
+                    "ID_MMFR0": {},
+                    "ID_MMFR1": {},
+                    "ID_MMFR2": {},
+                    "ID_MMFR3": {},
+                    "ID_PFR0": {},
+                    "ID_PFR1": {},
+                    "MIDR": {},
+                    "MPIDR": {},
+                    "REVIDR": {},
+                    "TCMTR": {},
+                    "TLBTR": {}
+                }
+            },
+            "JAZELLE": {
+                "unused_registers": {
+                    "JIDR": {}
+                }
+            },
+            "PRELOAD": {
+                "unused_registers": {
+                    "PLEASR": {},
+                    "PLEFSR": {},
+                    "PLEIDR": {}
+                }
+            },
+            "SECURITY": {
+                "unused_registers": {
+                    "ISR": {}
+                }
+            }
+        }
+    },
+    "targets": {
+        "CACHE_DL1": {
+            "core": false,
+            "count": 2,
+            "registers": {
+                "cacheline000": {
+                    "fields": [
+                        [
+                            "tag",
+                            [
+                                31,
+                                30
+                            ]
+                        ],
+                        [
+                            "dirty",
+                            [
+                                29,
+                                29
+                            ]
+                        ],
+                        [
+                            "data",
+                            [
+                                28,
+                                0
+                            ]
+                        ]
+                    ]
+                },
+                "cacheline000": {
+                    "fields": [
+                        [
+                            "tag",
+                            [
+                                31,
+                                30
+                            ]
+                        ],
+                        [
+                            "dirty",
+                            [
+                                29,
+                                29
+                            ]
+                        ],
+                        [
+                            "data",
+                            [
+                                28,
+                                0
+                            ]
+                        ]
+                    ]
+                }
+            },
+            "type": "CP"
+        },
+        "CACHE_IL1": {
+            "core": false,
+            "count": 2,
+            "registers": {
+                "cacheline000": {
+                    "fields": [
+                        [
+                            "tag",
+                            [
+                                31,
+                                30
+                            ]
+                        ],
+                        [
+                            "dirty",
+                            [
+                                29,
+                                29
+                            ]
+                        ],
+                        [
+                            "data",
+                            [
+                                28,
+                                0
+                            ]
+                        ]
+                    ]
+                },
+                "cacheline000": {
+                    "fields": [
+                        [
+                            "tag",
+                            [
+                                31,
+                                30
+                            ]
+                        ],
+                        [
+                            "dirty",
+                            [
+                                29,
+                                29
+                            ]
+                        ],
+                        [
+                            "data",
+                            [
+                                28,
+                                0
+                            ]
+                        ]
+                    ]
+                }
+            },
+            "type": "CP"
+        },
+        "CACHE_L2": {
+            "core": false,
+            "count": 1,
+            "registers": {
+                "cacheline000": {
+                    "fields": [
+                        [
+                            "tag",
+                            [
+                                31,
+                                30
+                            ]
+                        ],
+                        [
+                            "dirty",
+                            [
+                                29,
+                                29
+                            ]
+                        ],
+                        [
+                            "data",
+                            [
+                                28,
+                                0
+                            ]
+                        ]
+                    ]
+                },
+                "cacheline000": {
+                    "fields": [
+                        [
+                            "tag",
+                            [
+                                31,
+                                30
+                            ]
+                        ],
+                        [
+                            "dirty",
+                            [
+                                29,
+                                29
+                            ]
+                        ],
+                        [
+                            "data",
+                            [
+                                28,
+                                0
+                            ]
+                        ]
+                    ]
+                }
+            },
+            "type": "CP"
+        }
+    }
+}

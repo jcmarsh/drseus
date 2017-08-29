@@ -188,6 +188,7 @@ class fault_injector(object):
         self.db.campaign.timestamp = datetime.now()
         self.db.campaign.save()
 
+        # Robbie's code for the assembly golden run, uses a separate database (sqlite)
         if self.bbzybo:
             self.debugger.reset_dut()
             assembly_golden_run(self.options.cache_sqlite, self.debugger.dut)
@@ -317,10 +318,10 @@ class fault_injector(object):
                 if not self.db.campaign.simics:
                     if self.options.command == 'inject':
                         try:
+                            # Reset the DUT
                             self.debugger.reset_dut()
                         except DrSEUsError as error:
-                            self.db.result.outcome_category = \
-                                'Debugger error'
+                            self.db.result.outcome_category = 'Debugger error'
                             self.db.result.outcome = str(error)
                             self.db.log_result()
                             continue
@@ -339,9 +340,8 @@ class fault_injector(object):
                 incomplete = True
                 log_thread = Thread(target=background_log)
                 try:
-                    (self.db.result.num_register_diffs,
-                     self.db.result.num_memory_diffs, persistent_faults) = \
-                        self.debugger.inject_faults()
+                    # Run the program while injected some number of faults
+                    (self.db.result.num_register_diffs, self.db.result.num_memory_diffs, persistent_faults) = self.debugger.inject_faults()
                     if self.options.log_delay is not None:
                         log_thread.start()
                 except DrSEUsError as error:
@@ -400,10 +400,11 @@ class fault_injector(object):
                 self.db.result.outcome = ''
                 self.db.result.save()
 
-    # def inject_campaign(self, iteration_counter):
+        # Body of inject_campaign(self, iteration_counter):
         try:
-            # Perform cache injections before regular injections
-            perform_cache_injections(self.options.cache_sqlite, self)
+            # Executes multple iterations of the program, injecting one or more fault into each
+            # perform_injections() sets up all of the iterations of the program;
+            #   Injections are done in jtag/__init__.py
             perform_injections()
         except KeyboardInterrupt:
             self.db.result.outcome_category = 'Incomplete'
