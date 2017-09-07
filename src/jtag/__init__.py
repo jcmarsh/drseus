@@ -184,6 +184,8 @@ class jtag(object):
         print("********************************************************************************")
 
         if self.db.campaign.command:
+            # TODO: replace with telnet writes? Or is telnet not open yet? if bbzybo.
+            print("**** It's an injection start ****")
             self.dut.write('{}\n'.format(self.db.campaign.command))
         previous_injection_time = 0
 

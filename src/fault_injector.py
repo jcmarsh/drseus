@@ -89,8 +89,12 @@ class fault_injector(object):
                         start = self.debugger.get_time()
                     else:
                         self.debugger.dut.reset_timer()
-                    self.debugger.dut.write('{}\n'.format(
-                        self.db.campaign.command))
+                    # Starts run
+                    if self.bbzybo:
+                        self.debugger.start_dut()
+                    else:
+                        self.debugger.dut.write('{}\n'.format(
+                            self.db.campaign.command))
                     if self.db.campaign.simics:
                         self.debugger.continue_dut()
                     if self.db.campaign.kill_dut:
@@ -191,7 +195,7 @@ class fault_injector(object):
         # Robbie's code for the assembly golden run, uses a separate database (sqlite)
         if self.bbzybo:
             self.debugger.reset_dut()
-            assembly_golden_run(self.options.cache_sqlite, self.debugger.dut)
+            assembly_golden_run(self.options.cache_sqlite, self.debugger)
             print_sqlite_database(self.options.cache_sqlite)
         self.close()
 

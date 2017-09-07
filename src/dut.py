@@ -607,6 +607,7 @@ class dut(object):
 
     def write(self, string):
         if self.bbzybo:
+            print("**** The dut write bbzybo exception ****")
             p = subprocess.Popen('cd ../scripts/;./start.sh', shell=True)
             p.communicate()
             #p.kill()

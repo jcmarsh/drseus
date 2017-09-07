@@ -108,6 +108,17 @@ class openocd(jtag):
         return super().command(command, expected_output, error_message,
                                log_event, '\n', True)
 
+    def start_dut(self):
+        self.telnet.write(bytes('halt\n', encoding='utf-8'))
+        self.telnet.write(bytes('resume 0x00100000\n', encoding='utf-8'))
+
+    def break_dut(self, address):
+        self.telnet.write(bytes('halt\n', encoding='utf-8'))
+        self.telnet.write(bytes('bp ' + address + ' 1 hw\n', encoding='utf-8'))
+        self.telnet.write(bytes('resume 0x00100000\n', encoding='utf-8'))
+        sleep(.1)
+        self.telnet.write(bytes('rpb ' + address + '\n', encoding='utf-8'))
+
     def reset_dut(self, attempts=10):
         if self.power_switch:
             try:

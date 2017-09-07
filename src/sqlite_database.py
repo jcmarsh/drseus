@@ -4,7 +4,7 @@ from os import makedirs, remove
 from os.path import isfile
 from termcolor import colored, cprint
 from sqlite3 import connect
-from .dut import dut
+from .jtag.openocd import openocd
 from time import sleep
 
 from .database import get_campaign
@@ -17,7 +17,7 @@ def delete_sqlite_database(sqlite_database):
     cprint("Removing " + sqlite_database.database, 'red')
     remove(sqlite_database.database)
 
-def assembly_golden_run(sqlite_database, dut):
+def assembly_golden_run(sqlite_database, debugger):
     cprint("Running assembly golden run", 'yellow')
     # Get assembly instrucitons into raw files
     p = subprocess.Popen('cd ../scripts/;./start_asm_golden_run.sh', shell=True)
@@ -90,21 +90,19 @@ def assembly_golden_run(sqlite_database, dut):
     p.communicate()
     #p.kill()
 
-    # Let Zybo run until control is read
-    p = subprocess.Popen('cd ../scripts/;./start.sh', shell=True)
-    dut.read_until("control ", False, False, True)
+    # Start zybo but halt at the drseus_sync_tag label address
+    # TODO: Need to read this from the file instead of hardcoding
+    debugger.break_dut("0x00100724")
 
-    # Halt Zybo from running any further
-    subprocess.call('cd ../scripts/;./halt.sh', shell=True)
+    # TODO: remove sleep?
     sleep(1)
-    #p.kill()
 
     # Run on the database
     print("Running asm_golden_run.py")
     command = " 'cd ./jtag_eval/openOCD_cfg/mnt;python ./asm_golden_run.py'"
     p = subprocess.Popen("x-terminal-emulator -e \"ssh " + username + "@" + ip + command + "\"", shell=True)
     # Run until program is done
-    dut.read_until()
+    debugger.dut.read_until()
     subprocess.call("ssh " + username + "@" + ip + " 'touch ~/jtag_eval/openOCD_cfg/mnt/done'", shell=True)
     p.communicate()
 
