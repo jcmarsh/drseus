@@ -283,8 +283,11 @@ class fault_injector(object):
                     if self.db.campaign.aux:
                         self.debugger.aux.write('{}\n'.format(
                             self.db.campaign.aux_command))
-                    self.debugger.dut.write('{}\n'.format(
-                        self.db.campaign.command))
+                    if self.bbzybo:
+                        self.debugger.start_dut()
+                    else:
+                        self.debugger.dut.write('{}\n'.format(
+                            self.db.campaign.command))
                     outcome_category = self.db.result.outcome_category
                     outcome = self.db.result.outcome
                     monitor_execution(latent_iteration=i)

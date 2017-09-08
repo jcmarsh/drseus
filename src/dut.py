@@ -608,9 +608,7 @@ class dut(object):
     def write(self, string):
         if self.bbzybo:
             print("**** The dut write bbzybo exception ****")
-            p = subprocess.Popen('cd ../scripts/;./start.sh', shell=True)
-            p.communicate()
-            #p.kill()
+            print("**** This is an error. Use Telnet.  ****")
         else:
             self.serial.write(bytes(string, encoding='utf-8'))
         self.start_timer()

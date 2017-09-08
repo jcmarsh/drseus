@@ -184,9 +184,10 @@ class jtag(object):
         print("********************************************************************************")
 
         if self.db.campaign.command:
-            # TODO: replace with telnet writes? Or is telnet not open yet? if bbzybo.
+            # TODO: Need to call self.dut.break_dut so skip first bits?
+            # TODO: Needs to deal with timing better, at least for cache.
             print("**** It's an injection start ****")
-            self.dut.write('{}\n'.format(self.db.campaign.command))
+            self.start_dut()
         previous_injection_time = 0
 
         # Perform the injections
