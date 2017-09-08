@@ -12,44 +12,70 @@ from math import log
 
 # Cache settings
 # L1D, in bits
-L1D_TAG_SIZE = 19
+# L1D_TAG_SIZE = 19 <- derived
 L1D_DATA_SIZE = 256
 L1D_FLAG_SIZE = 2
-
-L1D_SIZE = 32768
+L1D_SIZE = 32768 # 32KiB, in bytes
 L1D_ASSOC = 4
+L1D_COUNT = 2 # One per core
 
-def create_cache(size, assoc, data_size, flag_bits):
+# L1I
+# L1I_TAG_SIZE = 19 <- derived
+L1I_DATA_SIZE = 256
+L1I_FLAG_SIZE = 1
+L1I_SIZE = 32768 # 32KiB, in bytes
+L1I_ASSOC = 4
+L1I_COUNT = 2 # One per core
+
+# L2
+# L2_TAG_SIZE = 16 <- derived
+L2_DATA_SIZE = 256
+L2_FLAG_SIZE = 2
+L2_SIZE = 524288 # 512KiB, in bytes
+L2_ASSOC = 8
+L2_COUNT = 1 # One shared L2 cache
+
+
+def create_cache(size, assoc, data_size, flag_bits, count):
 	flag = [flag_bits - 1, 0]
 	data = [(data_size - 1) + flag_bits, flag_bits]
-	index_bits = log((size * 8) / (assoc * data_size), 2)
-	block_offset_bits = log(data_size / 8, 2)
+	index_bits = int(log((size * 8) / (assoc * data_size), 2))
+	block_offset_bits = int(log(data_size / 8, 2))
 	tag_bits = 32 - (index_bits + block_offset_bits)
-	print("Tag_bits:", tag_bits, "block bits:", block_offset_bits, "index bits:", index_bits)
-	tag = [int((tag_bits - 1) + data_size + flag_bits), data_size + flag_bits]
+	# print("Tag_bits:", tag_bits, "block bits:", block_offset_bits, "index bits:", index_bits)
+	tag = [(tag_bits - 1) + data_size + flag_bits, data_size + flag_bits]
 
-	cacheline = {"fields": [["tag", tag], ["data", data], ["flag", flag]]}
+
+        fields = []
+        for index in range(0, assoc):
+                fields.append(["tag_%d" % index, tag])
+                fields.append(["data_%d" % index, data])
+                fields.append(["flag_%d" % index, flag])
+        # cacheline = {"fields": [["tag", tag], ["data", data], ["flag", flag]]}
+	cacheline = {"bits": int(assoc * (tag_bits + data_size + flag_bits)), "fields": fields}
+
 	# Need to add the ways for fields (tag_0-3, data 0_3, etc)
 	registers = {}
-	cache = {"core": False, "count": 2, "registers": registers}
+	cache = {"core": False, "count": count, "registers": registers}
 
 	for index in range(0, int(pow(2, index_bits))):
-		registers["cachline_%03d" % index] = dict(cacheline.items())
-		registers["cachline_%03d" % index].update({"index": index})
+		registers["cacheline_%04d" % index] = dict(cacheline.items())
+		registers["cacheline_%04d" % index].update({"index": index})
 
 	return cache
 
 
-# Cache L1D
-# tag = [277, 258]
-# data = [257, 2]
-# flag = [1, 0]
-# cacheline = {"fields": [["tag", tag], ["data", data], ["flag", flag]]}
-# registers = {"cacheline_000" : cacheline, "cacheline_001": cacheline, "cacheline_002": cacheline, "cacheline_003": cacheline}
-# cache_l1d = {"core": False, "count": 2, "registers": registers}
 
-print(json.dumps(create_cache(L1D_SIZE, L1D_ASSOC, L1D_DATA_SIZE, L1D_FLAG_SIZE), sort_keys=True, indent=2))
+# Formatting for including in the drseus json file
+print("\"CACHE_L2\": ")
+
+# Cache L1D
+#print(json.dumps(create_cache(L1D_SIZE, L1D_ASSOC, L1D_DATA_SIZE, L1D_FLAG_SIZE, L1D_COUNT), sort_keys=True, indent=2))
 
 # Cache L1I
+#print(json.dumps(create_cache(L1I_SIZE, L1I_ASSOC, L1I_DATA_SIZE, L1I_FLAG_SIZE, L1I_COUNT), sort_keys=True, indent=2))
 
 # Cache L2
+print(json.dumps(create_cache(L2_SIZE, L2_ASSOC, L2_DATA_SIZE, L2_FLAG_SIZE, L2_COUNT), sort_keys=True, indent=2))
+
+print("}")

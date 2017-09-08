@@ -174,13 +174,14 @@ class jtag(object):
 
         print("********************************************************************************")
         print("Injection times:")
-        print(injection_times)
+        print("\t", injection_times)
         print("Injections:")
         for injection in injections:
-            print("Injection:", injection.target)
+            print("\tInjection:", injection.target)
         print("Possible targets:")
         for target in self.targets:
-            print("Target:", target)
+            print("\tTarget:", target)
+        print("Target Indices?:", self.options.selected_target_indices)
         print("********************************************************************************")
 
         if self.db.campaign.command:

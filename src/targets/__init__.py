@@ -25,8 +25,8 @@ directory = dirname(abspath(__file__))
 
 
 def load_targets(architecture, type_):
-    with open(join(directory, architecture, '{}.cache_test.json'.format(type_)), 'r') \
-            as json_file:
+    # TODO: This selects the experimental cache_test targets
+    with open(join(directory, architecture, '{}.L2_only.json'.format(type_)), 'r') as json_file:
         targets = load(json_file)
     print("JSON file:", json_file)
     return targets
@@ -199,9 +199,11 @@ def choose_injection(targets, selected_target_indices):
     target_list = []
     total_bits = 0
     for target in targets:
+        print("Target", target, " has bits:", targets[target]['total_bits'])
         bits = targets[target]['total_bits']
         target_list.append((target, bits))
         total_bits += bits
+    print("**** Total bits: ", total_bits)
     random_bit = randrange(total_bits)
     bit_sum = 0
     for target in target_list:
@@ -233,7 +235,9 @@ def choose_injection(targets, selected_target_indices):
         injection['target_name'] = injection['target']
     register_list = []
     total_bits = 0
+    print("Registers: ")
     for register in target['registers']:
+        print("\tregister:", register, " - bits:", target['registers'][register]['total_bits'])
         bits = target['registers'][register]['total_bits']
         register_list.append((register, bits))
         total_bits += bits
@@ -293,6 +297,8 @@ def choose_injection(targets, selected_target_indices):
         injection['tlb_entry'] = injection['register']
         for index in injection['register_index'][:-1]:
             injection['tlb_entry'] += '[{}]'.format(index)
+    elif 'type' in target and target['type'] == 'cache':
+        print("**** Yo James, What's up?")
     else:
         if 'bits' in register:
             injection['bit'] = randrange(register['bits'])
