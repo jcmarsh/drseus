@@ -11,7 +11,7 @@ from .jtag.bdi import bdi
 from .jtag.dummy import dummy
 from .jtag.openocd import openocd
 from .simics import simics
-from .sqlite_database import sqlite_database, print_sqlite_database, assembly_golden_run
+from .sqlite_database import sqlite_database, print_sqlite_database, assembly_golden_run, record_tags
 from .sqlite_injection import perform_cache_injections
 
 from .sqlite_test import run_sqlite_tests
@@ -91,7 +91,17 @@ class fault_injector(object):
                         self.debugger.dut.reset_timer()
                     # Starts run
                     if self.bbzybo:
-                        self.debugger.start_dut()
+                        record_tags(self.options.cache_sqlite)
+                        #self.debugger.start_dut()
+                        # TODO: How to read cycle count?
+                        print("Breaking on", self.options.cache_sqlite.get_start_addr())
+                        self.debugger.break_dut(self.options.cache_sqlite.get_start_addr())
+                        start_cycle = self.debugger.check_cycles()
+                        print("Breaking on", self.options.cache_sqlite.get_end_addr())
+                        self.debugger.break_dut(self.options.cache_sqlite.get_end_addr())
+                        end_cycle = self.debugger.check_cycles()
+                        self.debugger.continue_dut()
+                        self.options.cache_sqlite.log_start_end(start_cycle, end_cycle)
                     else:
                         self.debugger.dut.write('{}\n'.format(
                             self.db.campaign.command))

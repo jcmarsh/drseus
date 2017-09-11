@@ -17,12 +17,16 @@ def delete_sqlite_database(sqlite_database):
     cprint("Removing " + sqlite_database.database, 'red')
     remove(sqlite_database.database)
 
+def record_tags(sqlite_database):
+    with open("../etc/tags.txt") as tags:
+        lines = tags.readlines()
+# '{} {}'.format('one', 'two')
+        start_addr = '0x{}'.format(lines[0].strip())
+        end_addr = '0x{}'.format(lines[1].strip())
+        sqlite_database.log_tags(start_addr, end_addr)
+
 def assembly_golden_run(sqlite_database, debugger):
     cprint("Running assembly golden run", 'yellow')
-    # Get assembly instrucitons into raw files
-    p = subprocess.Popen('cd ../scripts/;./start_asm_golden_run.sh', shell=True)
-    p.communicate()
-    #p.kill()
     cprint("Begin parsing, this may take a few minutes...", 'yellow')
     cprint("\tStoring load and store instructions...", 'yellow')
     with open("../etc/ldstr.txt") as ldstr:
@@ -91,8 +95,8 @@ def assembly_golden_run(sqlite_database, debugger):
     #p.kill()
 
     # Start zybo but halt at the drseus_sync_tag label address
-    # TODO: Need to read this from the file instead of hardcoding
-    debugger.break_dut("0x00100724")
+    print("Start and end tag addresses", sqlite_database.get_start_addr(), sqlite_database.get_end_addr())
+    debugger.break_dut(start_addr)
 
     # TODO: remove sleep?
     sleep(1)
@@ -203,8 +207,21 @@ class sqlite_database(object):
         #self.inst_name_col    = "instruction_name"
         #self.inst_name_type   = "TEXT"
 
+        # Execution information for injection (start and stop cycle counts)
+        self.inject_tbl        = "injection_info_table"
+        self.id_col            = "id"
+        self.id_type           = "INTEGER"
+        self.start_addr_col    = "start_tag_address"
+        self.start_addr_type   = "TEXT"
+        self.start_cycle_col   = "start_cycle"
+        self.start_cycle_type  = "INTEGER"
+        self.end_addr_col      = "end_tag_address"
+        self.end_addr_type     = "TEXT"
+        self.end_cycle_col     = "end_cycle"
+        self.end_cycle_type    = "INTEGER"
+
         #Save the tables in a list to make printing and changing the database easier
-        self.table_list = [self.branch_tbl, self.ldstr_tbl]
+        self.table_list = [self.branch_tbl, self.ldstr_tbl, self.inject_tbl]
 
     def __initialize_database(self):
         print(colored("\tInitializing database...", 'yellow'))
@@ -217,6 +234,14 @@ class sqlite_database(object):
             .format(tn=self.branch_tbl,\
             c1=self.address_col, t1=self.address_type,\
             c2=self.inst_name_col, t2=self.inst_name_type))
+
+        c.execute('CREATE TABLE {tn} ({c1} {t1} PRIMARY KEY, {c2} {t2}, {c3} {t3}, {c4} {t4}, {c5} {t5})'\
+            .format(tn=self.inject_tbl,\
+                    c1=self.id_col, t1=self.id_type,\
+                    c2=self.start_addr_col, t2=self.start_addr_type,\
+                    c3=self.start_cycle_col, t3=self.start_cycle_type,\
+                    c4=self.end_addr_col, t4=self.end_addr_type,\
+                    c5=self.end_cycle_col, t5=self.end_cycle_type))
 
         c.execute('CREATE TABLE {tn} ({c1} {t1} PRIMARY KEY, {c2} {t2}, {c3} {t3}, {c4} {t4}, {c5} {t5}, {c6} {t6}, {c7} {t7})'\
             .format(tn=self.ldstr_tbl,\
@@ -275,3 +300,45 @@ class sqlite_database(object):
 
         conn.commit()
         conn.close()
+
+    def log_tags(self, start_addr, end_addr):
+        print("Adding start and end tag addresses.", start_addr, end_addr)
+        conn = connect(self.database)
+        c = conn.cursor()
+
+        c.execute("INSERT INTO {} (\"{}\", \"{}\") VALUES ('{}', '{}')".format(self.inject_tbl, self.start_addr_col, self.end_addr_col, start_addr, end_addr))
+
+        conn.commit()
+        conn.close()
+
+    def log_start_end(self, start_cycle, end_cycle):
+        print("Adding start and end cycle counts.", start_cycle, end_cycle)
+        conn = connect(self.database)
+        c = conn.cursor()
+
+        c.execute("UPDATE {} SET {} = {}, {} = {} WHERE {} = {}".format(self.inject_tbl, self.start_cycle_col, start_cycle, self.end_cycle_col, end_cycle, self.id_col, 1))
+
+        conn.commit()
+        conn.close()
+
+    def get_start_addr(self):
+        conn = connect(self.database)
+        c = conn.cursor()
+
+        c.execute("SELECT {} FROM {}".format(self.start_addr_col, self.inject_tbl))
+        retval = c.fetchone()[0]
+
+        conn.commit()
+        conn.close()
+        return retval
+
+    def get_end_addr(self):
+        conn = connect(self.database)
+        c = conn.cursor()
+
+        c.execute("SELECT {} FROM {}".format(self.end_addr_col, self.inject_tbl))
+        retval = c.fetchone()[0]
+
+        conn.commit()
+        conn.close()
+        return retval

@@ -117,7 +117,20 @@ class openocd(jtag):
         self.telnet.write(bytes('bp ' + address + ' 1 hw\n', encoding='utf-8'))
         self.telnet.write(bytes('resume 0x00100000\n', encoding='utf-8'))
         sleep(.1)
-        self.telnet.write(bytes('rpb ' + address + '\n', encoding='utf-8'))
+        self.telnet.write(bytes('rbp ' + address + '\n', encoding='utf-8'))
+
+    def check_cycles(self):
+        self.telnet.write(bytes('arm mrc 15 0 9 13 0\n', encoding='utf-8'))
+        # To comment out this read; must call read_until()
+        print("Returned?\n", self.telnet.read_until(b"arm mrc 15 0 9 13 0\r\n"))
+        retval = self.telnet.read_some()
+        # print("Returned?\n", retval)
+        retval = retval.decode('ascii')
+        retval = retval[:-5]
+        retval = int(retval)
+        #print("Parse problems?", retval)
+        return retval
+        # print("Returned?\n", self.telnet.read_some())
 
     def reset_dut(self, attempts=10):
         if self.power_switch:

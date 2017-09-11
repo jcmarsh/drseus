@@ -16,3 +16,6 @@ simics-workspace
 *.swp
 a9.json
 p2020.json
+
+# Misc
+output.txt
