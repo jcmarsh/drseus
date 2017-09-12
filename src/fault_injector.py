@@ -12,7 +12,6 @@ from .jtag.dummy import dummy
 from .jtag.openocd import openocd
 from .simics import simics
 from .sqlite_database import sqlite_database, print_sqlite_database, assembly_golden_run, record_tags
-from .sqlite_injection import perform_cache_injections
 
 from .sqlite_test import run_sqlite_tests
 

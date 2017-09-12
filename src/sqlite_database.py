@@ -95,7 +95,8 @@ def assembly_golden_run(sqlite_database, debugger):
     #p.kill()
 
     # Start zybo but halt at the drseus_sync_tag label address
-    print("Start and end tag addresses", sqlite_database.get_start_addr(), sqlite_database.get_end_addr())
+    start_addr = sqlite_database.get_start_addr()
+    print("Start and end tag addresses", start_addr, sqlite_database.get_end_addr())
     debugger.break_dut(start_addr)
 
     # TODO: remove sleep?
