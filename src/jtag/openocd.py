@@ -124,9 +124,13 @@ class openocd(jtag):
         # To comment out this read; must call read_until()
         print("Returned?\n", self.telnet.read_until(b"arm mrc 15 0 9 13 0\r\n"))
         retval = self.telnet.read_some()
-        # print("Returned?\n", retval)
+        print("Returned?: ", retval)
+        if retval is '':
+            print("Trying check_cycles again (null)")
+            retval = self.telnet.read_some()
         retval = retval.decode('ascii')
-        retval = retval[:-5]
+        if '\r\n' in retval: # Sometimes the return doesn't include endline chars "\r\n\r>"
+            retval = retval[:-5]
         retval = int(retval)
         #print("Parse problems?", retval)
         return retval
