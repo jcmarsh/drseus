@@ -99,6 +99,12 @@ class fault_injector(object):
                         print("Breaking on", self.options.cache_sqlite.get_end_addr())
                         self.debugger.break_dut(self.options.cache_sqlite.get_end_addr())
                         end_cycle = self.debugger.check_cycles()
+                        print("Raw cycles: ", start_cycle, end_cycle)
+                        # By default, the Cortex-A9 PMCCNTR register is counting 1 per 64 cycles
+                        start_cycle = start_cycle * 64 # beginning will underestimated
+                        end_cycle = end_cycle * 64 + 64 # ending will be overestimated
+                        print("Start and end convert: ", start_cycle, end_cycle)
+                        print("Diff: ", end_cycle - start_cycle)
                         self.debugger.continue_dut()
                         self.options.cache_sqlite.log_start_end(start_cycle, end_cycle)
                     else:
