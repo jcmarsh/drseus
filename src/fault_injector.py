@@ -98,6 +98,7 @@ class fault_injector(object):
                         start_cycle = self.debugger.check_cycles()
                         print("Breaking on", self.options.cache_sqlite.get_end_addr())
                         self.debugger.break_dut(self.options.cache_sqlite.get_end_addr())
+                        sleep(1)
                         end_cycle = self.debugger.check_cycles()
                         print("Raw cycles: ", start_cycle, end_cycle)
                         # By default, the Cortex-A9 PMCCNTR register is counting 1 per 64 cycles
