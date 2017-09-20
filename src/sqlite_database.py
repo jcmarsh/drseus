@@ -27,58 +27,10 @@ def record_tags(sqlite_database):
 
 def assembly_golden_run(sqlite_database, debugger):
     cprint("Running assembly golden run", 'yellow')
-    cprint("Begin parsing, this may take a few minutes...", 'yellow')
-    cprint("\tStoring load and store instructions...", 'yellow')
-    with open("../etc/ldstr.txt") as ldstr:
-        for line in ldstr:
 
-            inst_addr = subprocess.check_output("echo " + "\"" + str(line) + "\"" + " | awk '{ print $1 }'", shell=True)
-            inst_addr = str(inst_addr).lstrip("b\'")
-            inst_addr = str(inst_addr).rstrip(":\\n\\n\'")
-            #print(inst_addr)
+    #        sqlite_database.log_ldstr(inst_addr, cache, cycles_diff, cycles_total, ldstr, ldstr_addr, ldstr_str)
+    #        sqlite_database.log_branch(inst_addr, inst_name)
 
-            hex_addr = int(inst_addr, 16)
-            bin_addr = bin(hex_addr)
-            bin_addr = bin_addr[:-5]
-            bin_addr = bin_addr[-11:]
-            bin_addr = int(bin_addr, 2)
-            cache = int(str(bin_addr), 10)
-
-            cycles_diff = '-1'
-            cycles_total = '-1'
-
-            ldstr_str = subprocess.check_output("echo " + "\"" + str(line) + "\"" + " | awk '{ print $3 }'", shell=True)
-            ldstr_str = str(ldstr_str).lstrip("b\'")
-            ldstr_str = str(ldstr_str).rstrip(":\\n\\n\'")
-            if re.match('st', ldstr_str) is not None or re.match('push', ldstr_str):
-                ldstr = 1
-            else:
-                ldstr = 0
-            #print(ldstr_str + ", is a: " + str(ldstr))
-
-            ldstr_addr = -1
-
-            sqlite_database.log_ldstr(inst_addr, cache, cycles_diff, cycles_total, ldstr, ldstr_addr, ldstr_str)
-    cprint("\tStoring branch instructions...", 'yellow')
-    with open("../etc/branch.txt") as ldstr:
-        for line in ldstr:
-
-            inst_addr = subprocess.check_output("echo " + "\"" + str(line) + "\"" + " | awk '{ print $1 }'", shell=True)
-            inst_addr = str(inst_addr).lstrip("b\'")
-            inst_addr = str(inst_addr).rstrip(":\\n\\n\'")
-            #print(inst_addr)
-
-            inst_name = subprocess.check_output("echo " + "\"" + str(line) + "\"" + " | awk '{ print $3 }'", shell=True)
-            inst_name = str(inst_name)[2:-5]
-            #print(inst_name)
-
-            sqlite_database.log_branch(inst_addr, inst_name)
-
-
-    print_sqlite_database(sqlite_database)
-    cprint("Done", 'yellow')
-
-    cprint("Transfering database to embedded board...", 'yellow')
     cprint("\tGetting username and ip...", 'yellow')
 
     username = subprocess.check_output("cat ../login_info | awk -F = '/user/{ print $2 }'", shell=True)
@@ -184,29 +136,23 @@ class sqlite_database(object):
         return database
 
     def __initialize_params(self):
-        self.branch_tbl      = "branch_table"
-        self.address_col     = "address" # PRIMARY KEY
-        self.address_type    = "TEXT"
-        self.inst_name_col   = "instruction_name"
-        self.inst_name_type  = "TEXT"
-
         # Fields for the load / store table
-        self.ldstr_tbl         = "loadstore_table"
-        # This table uses address columns too
-        #self.address_col      = "address" # PRIMARY KEY
-        #address_type          = "INTEGER"
-        self.cache_set_col     = "cache_set"
-        self.cache_set_type    = "INTEGER"
-        self.cycles_total_col  = "cycles_total"
-        self.cycles_total_type = "TEXT"
+        self.ldstr_tbl         = "loadstore"
+
+        self.cycles_total_col  = "cycles_total" # Primary Key
+        self.cycles_total_type = "INTEGER"
         self.cycles_diff_col   = "cycles_diff"
-        self.cycles_diff_type  = "TEXT"
-        self.ldstr_col         = "load0_store1"
-        self.ldstr_type        = "INTEGER"
+        self.cycles_diff_type  = "INTEGER"
+        self.address_col       = "address"
+        self.address_type      = "TEXT"
         self.ldstr_addr_col    = "loadstore_address"
         self.ldstr_addr_type   = "TEXT"
-        #self.inst_name_col    = "instruction_name"
-        #self.inst_name_type   = "TEXT"
+        self.ldstr_col         = "load0_store1"
+        self.ldstr_type        = "INTEGER"
+        self.inst_name_col     = "instruction_name"
+        self.inst_name_type    = "TEXT"
+        self.cache_set_col     = "L2_set"
+        self.cache_set_type    = "INTEGER"
 
         # Execution information for injection (start and stop cycle counts)
         self.inject_tbl        = "injection_info_table"
@@ -231,10 +177,15 @@ class sqlite_database(object):
         c = conn.cursor()
 
         # Add to database
-        c.execute('CREATE TABLE {tn} ({c1} {t1} PRIMARY KEY, {c2} {t2})'\
-            .format(tn=self.branch_tbl,\
-            c1=self.address_col, t1=self.address_type,\
-            c2=self.inst_name_col, t2=self.inst_name_type))
+        c.execute('CREATE TABLE {tn} ({c1} {t1} PRIMARY KEY, {c2} {t2}, {c3} {t3}, {c4} {t4}, {c5} {t5}, {c6} {t6}, {c7} {t7})'\
+            .format(tn=self.ldstr_tbl,\
+                    c1 = self.cycles_total_col, t1 = self.cycles_total_typ,\
+                    c2 = self.cycles_diff_col, t2 = self.cycles_diff_type,\
+                    c3 = self.address_col, t3 = self.address_type,\
+                    c4 = self.ldstr_addr_col, t4 = self.ldstr_addr_type,\
+                    c5 = self.ldstr_col, t5 = self.ldstr_type,\
+                    c6 = self.inst_name_col, t6 = self.inst_name_type,\
+                    c7 = self.cache_set_col, t7 = self.cache_set_type))
 
         c.execute('CREATE TABLE {tn} ({c1} {t1} PRIMARY KEY, {c2} {t2}, {c3} {t3}, {c4} {t4}, {c5} {t5})'\
             .format(tn=self.inject_tbl,\
@@ -244,15 +195,6 @@ class sqlite_database(object):
                     c4=self.end_addr_col, t4=self.end_addr_type,\
                     c5=self.end_cycle_col, t5=self.end_cycle_type))
 
-        c.execute('CREATE TABLE {tn} ({c1} {t1} PRIMARY KEY, {c2} {t2}, {c3} {t3}, {c4} {t4}, {c5} {t5}, {c6} {t6}, {c7} {t7})'\
-            .format(tn=self.ldstr_tbl,\
-            c1=self.address_col, t1=self.address_type,\
-            c2=self.cache_set_col, t2=self.cache_set_type,\
-            c3=self.cycles_diff_col, t3=self.cycles_diff_type,\
-            c4=self.cycles_total_col, t4=self.cycles_total_type,\
-            c5=self.ldstr_col, t5=self.ldstr_type,\
-            c6=self.ldstr_addr_col, t6=self.ldstr_addr_type,\
-            c7=self.inst_name_col, t7=self.inst_name_type))
 
         conn.commit()
         conn.close()
@@ -260,28 +202,8 @@ class sqlite_database(object):
     def __create_reslut(self):
         pass
 
-    def log_branch(self, inst_addr, inst_name):
-        conn = connect(self.database)
-        c = conn.cursor()
-
-        # Make sure that cycles is unique
-        c.execute("SELECT * FROM {tn} WHERE {cn}=('{val}')"\
-             .format(tn=self.branch_tbl, cn=self.address_col, val=str(inst_addr)))
-        if c.fetchone() != None:
-            conn.close()
-            cprint("Conflict in log_branch, primary key instruction address collision", 'red')
-            cprint("Exiting")
-            exit()
-
-        c.execute("INSERT INTO {tn} ({c1}, {c2}) VALUES ('{t1}', '{t2}')"
-             .format(tn=self.branch_tbl,
-             c1=self.address_col, c2=self.inst_name_col, \
-             t1=str(inst_addr), t2=str(inst_name)))
-
-        conn.commit()
-        conn.close()
-
-    def log_ldstr(self, inst_addr, cache, cycles_diff, cycles_total, ldstr, ldstr_addr, inst_name):
+    def log_ldstr(self, cycles_total, cycles_diff, inst_addr, ldstr_addr, ldstr, inst_name, cache):
+        # TODO: Function not used?
         conn = connect(self.database)
         c = conn.cursor()
 
@@ -296,8 +218,8 @@ class sqlite_database(object):
 
         c.execute("INSERT INTO {tn} ({c1}, {c2}, {c3}, {c4}, {c5}, {c6}, {c7}) VALUES ('{t1}', {t2}, {t3}, {t4}, {t5}, '{t6}', '{t7}')"
              .format(tn=self.ldstr_tbl,
-             c1=self.address_col, c2=self.cache_set_col, c3=self.cycles_diff_col, c4=self.cycles_total_col, c5=self.ldstr_col, c6=self.ldstr_addr_col, c7=self.inst_name_col,\
-             t1=str(inst_addr), t2=cache, t3=cycles_diff, t4=cycles_total, t5=ldstr, t6=str(ldstr_addr), t7=inst_name))
+                     c1=self.cycles_total_col, c2=self.cycles_diff_col, c3=self.address_col, c4=self.ldstr_addr_col, c5=self.ldstr_col, c6=self.inst_name_col, c7=self.cache_set_col, \
+                     t1=cycles_total, t2=cycles_diff, t3=str(inst_addr), t4=str(ldstr_addr), t5=ldstr, t6=inst_name, t7=cache))
 
         conn.commit()
         conn.close()
