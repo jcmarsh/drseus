@@ -21,8 +21,8 @@ def record_tags(sqlite_database):
     with open("../etc/tags.txt") as tags:
         lines = tags.readlines()
 # '{} {}'.format('one', 'two')
-        start_addr = '0x{}'.format(lines[0].strip())
-        end_addr = '0x{}'.format(lines[1].strip())
+        start_addr = int(lines[0].strip(), 16)
+        end_addr = int(lines[1].strip(), 16)
         sqlite_database.log_tags(start_addr, end_addr)
 
 def assembly_golden_run(sqlite_database, debugger):
@@ -32,13 +32,12 @@ def assembly_golden_run(sqlite_database, debugger):
     with open("../etc/ldstr.txt") as ldstr:
         for line in ldstr:
 
-            inst_addr = subprocess.check_output("echo " + "\"" + str(line) + "\"" + " | awk '{ print $1 }'", shell=True)
-            inst_addr = str(inst_addr).lstrip("b\'")
-            inst_addr = str(inst_addr).rstrip(":\\n\\n\'")
-            #print(inst_addr)
+            inst_addr = line.split()[0]
+            inst_addr = inst_addr.strip(":")
+            inst_addr = int(inst_addr, 16)
 
-            hex_addr = int(inst_addr, 16)
-            bin_addr = bin(hex_addr)
+            # TODO: Double check. Cutting of binary bits in this way is clever.
+            bin_addr = bin(inst_addr)
             bin_addr = bin_addr[:-5]
             bin_addr = bin_addr[-11:]
             bin_addr = int(bin_addr, 2)
@@ -65,7 +64,7 @@ def assembly_golden_run(sqlite_database, debugger):
 
             inst_addr = subprocess.check_output("echo " + "\"" + str(line) + "\"" + " | awk '{ print $1 }'", shell=True)
             inst_addr = str(inst_addr).lstrip("b\'")
-            inst_addr = str(inst_addr).rstrip(":\\n\\n\'")
+            inst_addr = int(str(inst_addr).rstrip(":\\n\\n\'"), 16)
             #print(inst_addr)
 
             inst_name = subprocess.check_output("echo " + "\"" + str(line) + "\"" + " | awk '{ print $3 }'", shell=True)
@@ -95,8 +94,8 @@ def assembly_golden_run(sqlite_database, debugger):
     #p.kill()
 
     # Start zybo but halt at the drseus_sync_tag label address
-    start_addr = sqlite_database.get_start_addr()
-    print("Start and end tag addresses", start_addr, sqlite_database.get_end_addr())
+    start_addr = hex(sqlite_database.get_start_addr())
+    print("Start and end tag addresses", start_addr, hex(sqlite_database.get_end_addr()))
     debugger.break_dut(start_addr)
 
     # TODO: remove sleep?
@@ -126,15 +125,15 @@ def print_sqlite_database(sqlite_database):
         c.execute("PRAGMA TABLE_INFO({})".format(tn))
         info = c.fetchall()
 
-        # Loop through once before printing to determine table dimensions
-        row_spacing = 19
-        len_y = 1 # Initial |
+        # Loop through once before printing to determine row spacing
+        row_spacing = 5
         for col in info:
-            len_y += row_spacing + 1 # Extra 1 is for the | that comes with each new column
-        len_x = (int)((len_y - len(str(tn))) / 2)
-        len_z = len_x + len_x + len(str(tn))
+            if len(str(col[1])) > row_spacing:
+                row_spacing = len(str(col[1]))
+        row_spacing = row_spacing + 1
+        print('Row spacing = ' + str(row_spacing))
 
-        print(((len_x-1) * '-') + '_' + str(tn) + '_' + ((len_x-1) * '-'))
+        print('----__' + str(tn) + '__----')
 
         # Print the column names
         for col in info:
@@ -153,7 +152,7 @@ def print_sqlite_database(sqlite_database):
                 i += 1
             print('|')
 
-        print(len_z * '-')
+        print('-----------------')
 
     print(colored("\n+++++++++++++++++++++++++++++++++++++++++++++++++++++++++\n", 'yellow'))
     conn.close()
@@ -184,14 +183,14 @@ class sqlite_database(object):
         return database
 
     def __initialize_params(self):
-        self.branch_tbl      = "branch_table"
+        self.branch_tbl      = "branch"
         self.address_col     = "address" # PRIMARY KEY
-        self.address_type    = "TEXT"
-        self.inst_name_col   = "instruction_name"
+        self.address_type    = "INTEGER"
+        self.inst_name_col   = "instruction"
         self.inst_name_type  = "TEXT"
 
         # Fields for the load / store table
-        self.ldstr_tbl         = "loadstore_table"
+        self.ldstr_tbl         = "loadstore"
         # This table uses address columns too
         #self.address_col      = "address" # PRIMARY KEY
         #address_type          = "INTEGER"
@@ -203,21 +202,21 @@ class sqlite_database(object):
         self.cycles_diff_type  = "TEXT"
         self.ldstr_col         = "load0_store1"
         self.ldstr_type        = "INTEGER"
-        self.ldstr_addr_col    = "loadstore_address"
+        self.ldstr_addr_col    = "l_s_addr"
         self.ldstr_addr_type   = "TEXT"
-        #self.inst_name_col    = "instruction_name"
+        #self.inst_name_col    = "instruction"
         #self.inst_name_type   = "TEXT"
 
         # Execution information for injection (start and stop cycle counts)
-        self.inject_tbl        = "injection_info_table"
+        self.inject_tbl        = "injection_info"
         self.id_col            = "id"
         self.id_type           = "INTEGER"
-        self.start_addr_col    = "start_tag_address"
-        self.start_addr_type   = "TEXT"
+        self.start_addr_col    = "start_tag_addr"
+        self.start_addr_type   = "INTEGER"
         self.start_cycle_col   = "start_cycle"
         self.start_cycle_type  = "INTEGER"
-        self.end_addr_col      = "end_tag_address"
-        self.end_addr_type     = "TEXT"
+        self.end_addr_col      = "end_tag_addr"
+        self.end_addr_type     = "INTEGER"
         self.end_cycle_col     = "end_cycle"
         self.end_cycle_type    = "INTEGER"
 
@@ -265,18 +264,18 @@ class sqlite_database(object):
         c = conn.cursor()
 
         # Make sure that cycles is unique
-        c.execute("SELECT * FROM {tn} WHERE {cn}=('{val}')"\
-             .format(tn=self.branch_tbl, cn=self.address_col, val=str(inst_addr)))
+        c.execute("SELECT * FROM {tn} WHERE {cn}=({val})"\
+             .format(tn=self.branch_tbl, cn=self.address_col, val=inst_addr))
         if c.fetchone() != None:
             conn.close()
             cprint("Conflict in log_branch, primary key instruction address collision", 'red')
             cprint("Exiting")
             exit()
 
-        c.execute("INSERT INTO {tn} ({c1}, {c2}) VALUES ('{t1}', '{t2}')"
+        c.execute("INSERT INTO {tn} ({c1}, {c2}) VALUES ({t1}, '{t2}')"
              .format(tn=self.branch_tbl,
              c1=self.address_col, c2=self.inst_name_col, \
-             t1=str(inst_addr), t2=str(inst_name)))
+             t1=inst_addr, t2=str(inst_name)))
 
         conn.commit()
         conn.close()
@@ -286,18 +285,18 @@ class sqlite_database(object):
         c = conn.cursor()
 
         # Make sure that cycles is unique
-        c.execute("SELECT * FROM {tn} WHERE {cn}=('{val}')"\
-             .format(tn=self.ldstr_tbl, cn=self.address_col, val=str(inst_addr)))
+        c.execute("SELECT * FROM {tn} WHERE {cn}=({val})"\
+             .format(tn=self.ldstr_tbl, cn=self.address_col, val=inst_addr))
         if c.fetchone() != None:
             conn.close()
             cprint("Conflict in log_ldstr, primary key instruction address collision", 'red')
             cprint("Exiting")
             exit()
 
-        c.execute("INSERT INTO {tn} ({c1}, {c2}, {c3}, {c4}, {c5}, {c6}, {c7}) VALUES ('{t1}', {t2}, {t3}, {t4}, {t5}, '{t6}', '{t7}')"
+        c.execute("INSERT INTO {tn} ({c1}, {c2}, {c3}, {c4}, {c5}, {c6}, {c7}) VALUES ({t1}, {t2}, {t3}, {t4}, {t5}, '{t6}', '{t7}')"
              .format(tn=self.ldstr_tbl,
              c1=self.address_col, c2=self.cache_set_col, c3=self.cycles_diff_col, c4=self.cycles_total_col, c5=self.ldstr_col, c6=self.ldstr_addr_col, c7=self.inst_name_col,\
-             t1=str(inst_addr), t2=cache, t3=cycles_diff, t4=cycles_total, t5=ldstr, t6=str(ldstr_addr), t7=inst_name))
+             t1=inst_addr, t2=cache, t3=cycles_diff, t4=cycles_total, t5=ldstr, t6=str(ldstr_addr), t7=inst_name))
 
         conn.commit()
         conn.close()
@@ -307,7 +306,7 @@ class sqlite_database(object):
         conn = connect(self.database)
         c = conn.cursor()
 
-        c.execute("INSERT INTO {} (\"{}\", \"{}\") VALUES ('{}', '{}')".format(self.inject_tbl, self.start_addr_col, self.end_addr_col, start_addr, end_addr))
+        c.execute("INSERT INTO {} (\"{}\", \"{}\") VALUES ({}, {})".format(self.inject_tbl, self.start_addr_col, self.end_addr_col, start_addr, end_addr))
 
         conn.commit()
         conn.close()
