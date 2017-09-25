@@ -103,7 +103,7 @@ def assembly_golden_run(sqlite_database, debugger):
 
     # Run on the database
     print("Running asm_golden_run.py")
-    command = " 'cd ./jtag_eval/openOCD_cfg/mnt;python ./asm_golden_run.py'"
+    command = " 'cd ./jtag_eval/openOCD_cfg/mnt;python ./asm_golden_run.py |& tee asm_output.txt'"
     p = subprocess.Popen("x-terminal-emulator -e \"ssh " + username + "@" + ip + command + "\"", shell=True)
     # Run until program is done
     debugger.dut.read_until()
