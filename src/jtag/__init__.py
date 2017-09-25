@@ -75,6 +75,7 @@ class jtag(object):
             while attempt < 3:
                 attempt += 1;
                 print("Connection to Telnet refused, retrying...")
+                sleep(1)
                 self.telnet = Telnet(self.options.debugger_ip_address, self.port,
                                      timeout=self.timeout)
                 if self.telnet:

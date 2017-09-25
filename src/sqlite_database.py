@@ -21,15 +21,13 @@ def record_tags(sqlite_database):
     with open("../etc/tags.txt") as tags:
         lines = tags.readlines()
 # '{} {}'.format('one', 'two')
-        start_addr = '0x{}'.format(lines[0].strip())
-        end_addr = '0x{}'.format(lines[1].strip())
+        start_addr = int(lines[0].strip(), 16)
+        end_addr = int(lines[1].strip(), 16)
         sqlite_database.log_tags(start_addr, end_addr)
 
 def assembly_golden_run(sqlite_database, debugger):
     cprint("Running assembly golden run", 'yellow')
 
-    #        sqlite_database.log_ldstr(inst_addr, cache, cycles_diff, cycles_total, ldstr, ldstr_addr, ldstr_str)
-    #        sqlite_database.log_branch(inst_addr, inst_name)
 
     cprint("\tGetting username and ip...", 'yellow')
 
@@ -47,8 +45,8 @@ def assembly_golden_run(sqlite_database, debugger):
     #p.kill()
 
     # Start zybo but halt at the drseus_sync_tag label address
-    start_addr = sqlite_database.get_start_addr()
-    print("Start and end tag addresses", start_addr, sqlite_database.get_end_addr())
+    start_addr = hex(sqlite_database.get_start_addr())
+    print("Start and end tag addresses", start_addr, hex(sqlite_database.get_end_addr()))
     debugger.break_dut(start_addr)
 
     # TODO: remove sleep?
@@ -56,7 +54,7 @@ def assembly_golden_run(sqlite_database, debugger):
 
     # Run on the database
     print("Running asm_golden_run.py")
-    command = " 'cd ./jtag_eval/openOCD_cfg/mnt;python ./asm_golden_run.py'"
+    command = " 'cd ./jtag_eval/openOCD_cfg/mnt;python ./asm_golden_run.py |& tee asm_output.txt'"
     p = subprocess.Popen("x-terminal-emulator -e \"ssh " + username + "@" + ip + command + "\"", shell=True)
     # Run until program is done
     debugger.dut.read_until()
@@ -78,15 +76,15 @@ def print_sqlite_database(sqlite_database):
         c.execute("PRAGMA TABLE_INFO({})".format(tn))
         info = c.fetchall()
 
-        # Loop through once before printing to determine table dimensions
-        row_spacing = 19
-        len_y = 1 # Initial |
+        # Loop through once before printing to determine row spacing
+        row_spacing = 5
         for col in info:
-            len_y += row_spacing + 1 # Extra 1 is for the | that comes with each new column
-        len_x = (int)((len_y - len(str(tn))) / 2)
-        len_z = len_x + len_x + len(str(tn))
+            if len(str(col[1])) > row_spacing:
+                row_spacing = len(str(col[1]))
+        row_spacing = row_spacing + 1
+        print('Row spacing = ' + str(row_spacing))
 
-        print(((len_x-1) * '-') + '_' + str(tn) + '_' + ((len_x-1) * '-'))
+        print('----__' + str(tn) + '__----')
 
         # Print the column names
         for col in info:
@@ -105,7 +103,7 @@ def print_sqlite_database(sqlite_database):
                 i += 1
             print('|')
 
-        print(len_z * '-')
+        print('-----------------')
 
     print(colored("\n+++++++++++++++++++++++++++++++++++++++++++++++++++++++++\n", 'yellow'))
     conn.close()
@@ -139,31 +137,31 @@ class sqlite_database(object):
         # Fields for the load / store table
         self.ldstr_tbl         = "loadstore"
 
-        self.cycles_total_col  = "cycles_total" # Primary Key
+        self.cycles_total_col  = "cycles_total" #Primary Key
         self.cycles_total_type = "INTEGER"
         self.cycles_diff_col   = "cycles_diff"
         self.cycles_diff_type  = "INTEGER"
         self.address_col       = "address"
         self.address_type      = "TEXT"
-        self.ldstr_addr_col    = "loadstore_address"
-        self.ldstr_addr_type   = "TEXT"
         self.ldstr_col         = "load0_store1"
         self.ldstr_type        = "INTEGER"
-        self.inst_name_col     = "instruction_name"
-        self.inst_name_type    = "TEXT"
+        self.ldstr_addr_col    = "l_s_addr"
+        self.ldstr_addr_type   = "INTEGER"
+        self.inst_name_col    = "instruction"
+        self.inst_name_type   = "TEXT"
         self.cache_set_col     = "L2_set"
         self.cache_set_type    = "INTEGER"
 
         # Execution information for injection (start and stop cycle counts)
-        self.inject_tbl        = "injection_info_table"
+        self.inject_tbl        = "injection_info"
         self.id_col            = "id"
         self.id_type           = "INTEGER"
-        self.start_addr_col    = "start_tag_address"
-        self.start_addr_type   = "TEXT"
+        self.start_addr_col    = "start_tag_addr"
+        self.start_addr_type   = "INTEGER"
         self.start_cycle_col   = "start_cycle"
         self.start_cycle_type  = "INTEGER"
-        self.end_addr_col      = "end_tag_address"
-        self.end_addr_type     = "TEXT"
+        self.end_addr_col      = "end_tag_addr"
+        self.end_addr_type     = "INTEGER"
         self.end_cycle_col     = "end_cycle"
         self.end_cycle_type    = "INTEGER"
 
@@ -179,13 +177,13 @@ class sqlite_database(object):
         # Add to database
         c.execute('CREATE TABLE {tn} ({c1} {t1} PRIMARY KEY, {c2} {t2}, {c3} {t3}, {c4} {t4}, {c5} {t5}, {c6} {t6}, {c7} {t7})'\
             .format(tn=self.ldstr_tbl,\
-                    c1 = self.cycles_total_col, t1 = self.cycles_total_typ,\
-                    c2 = self.cycles_diff_col, t2 = self.cycles_diff_type,\
-                    c3 = self.address_col, t3 = self.address_type,\
-                    c4 = self.ldstr_addr_col, t4 = self.ldstr_addr_type,\
-                    c5 = self.ldstr_col, t5 = self.ldstr_type,\
-                    c6 = self.inst_name_col, t6 = self.inst_name_type,\
-                    c7 = self.cache_set_col, t7 = self.cache_set_type))
+            c1=self.address_col, t1=self.address_type,\
+            c2=self.cache_set_col, t2=self.cache_set_type,\
+            c3=self.cycles_diff_col, t3=self.cycles_diff_type,\
+            c4=self.cycles_total_col, t4=self.cycles_total_type,\
+            c5=self.ldstr_col, t5=self.ldstr_type,\
+            c6=self.ldstr_addr_col, t6=self.ldstr_addr_type,\
+            c7=self.inst_name_col, t7=self.inst_name_type))
 
         c.execute('CREATE TABLE {tn} ({c1} {t1} PRIMARY KEY, {c2} {t2}, {c3} {t3}, {c4} {t4}, {c5} {t5})'\
             .format(tn=self.inject_tbl,\
@@ -202,24 +200,44 @@ class sqlite_database(object):
     def __create_reslut(self):
         pass
 
-    def log_ldstr(self, cycles_total, cycles_diff, inst_addr, ldstr_addr, ldstr, inst_name, cache):
-        # TODO: Function not used?
+    def log_ldstr(self, inst_addr, inst_name):
         conn = connect(self.database)
         c = conn.cursor()
 
         # Make sure that cycles is unique
-        c.execute("SELECT * FROM {tn} WHERE {cn}=('{val}')"\
-             .format(tn=self.ldstr_tbl, cn=self.address_col, val=str(inst_addr)))
+        c.execute("SELECT * FROM {tn} WHERE {cn}=({val})"\
+             .format(tn=self.branch_tbl, cn=self.address_col, val=inst_addr))
+        if c.fetchone() != None:
+            conn.close()
+            cprint("Conflict in log_branch, primary key instruction address collision", 'red')
+            cprint("Exiting")
+            exit()
+
+        c.execute("INSERT INTO {tn} ({c1}, {c2}) VALUES ({t1}, '{t2}')"
+             .format(tn=self.branch_tbl,
+             c1=self.address_col, c2=self.inst_name_col, \
+             t1=inst_addr, t2=str(inst_name)))
+
+        conn.commit()
+        conn.close()
+
+    def log_ldstr(self, inst_addr, cache, cycles_diff, cycles_total, ldstr, ldstr_addr, inst_name):
+        conn = connect(self.database)
+        c = conn.cursor()
+
+        # Make sure that cycles is unique
+        c.execute("SELECT * FROM {tn} WHERE {cn}=({val})"\
+             .format(tn=self.ldstr_tbl, cn=self.address_col, val=inst_addr))
         if c.fetchone() != None:
             conn.close()
             cprint("Conflict in log_ldstr, primary key instruction address collision", 'red')
             cprint("Exiting")
             exit()
 
-        c.execute("INSERT INTO {tn} ({c1}, {c2}, {c3}, {c4}, {c5}, {c6}, {c7}) VALUES ('{t1}', {t2}, {t3}, {t4}, {t5}, '{t6}', '{t7}')"
+        c.execute("INSERT INTO {tn} ({c1}, {c2}, {c3}, {c4}, {c5}, {c6}, {c7}) VALUES ({t1}, {t2}, {t3}, {t4}, {t5}, '{t6}', '{t7}')"
              .format(tn=self.ldstr_tbl,
-                     c1=self.cycles_total_col, c2=self.cycles_diff_col, c3=self.address_col, c4=self.ldstr_addr_col, c5=self.ldstr_col, c6=self.inst_name_col, c7=self.cache_set_col, \
-                     t1=cycles_total, t2=cycles_diff, t3=str(inst_addr), t4=str(ldstr_addr), t5=ldstr, t6=inst_name, t7=cache))
+             c1=self.address_col, c2=self.cache_set_col, c3=self.cycles_diff_col, c4=self.cycles_total_col, c5=self.ldstr_col, c6=self.ldstr_addr_col, c7=self.inst_name_col,\
+             t1=inst_addr, t2=cache, t3=cycles_diff, t4=cycles_total, t5=ldstr, t6=str(ldstr_addr), t7=inst_name))
 
         conn.commit()
         conn.close()
@@ -229,7 +247,7 @@ class sqlite_database(object):
         conn = connect(self.database)
         c = conn.cursor()
 
-        c.execute("INSERT INTO {} (\"{}\", \"{}\") VALUES ('{}', '{}')".format(self.inject_tbl, self.start_addr_col, self.end_addr_col, start_addr, end_addr))
+        c.execute("INSERT INTO {} (\"{}\", \"{}\") VALUES ({}, {})".format(self.inject_tbl, self.start_addr_col, self.end_addr_col, start_addr, end_addr))
 
         conn.commit()
         conn.close()
