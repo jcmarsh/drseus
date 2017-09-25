@@ -166,7 +166,7 @@ class sqlite_database(object):
         self.end_cycle_type    = "INTEGER"
 
         #Save the tables in a list to make printing and changing the database easier
-        self.table_list = [self.branch_tbl, self.ldstr_tbl, self.inject_tbl]
+        self.table_list = [self.ldstr_tbl, self.inject_tbl]
 
     def __initialize_database(self):
         print(colored("\tInitializing database...", 'yellow'))
@@ -199,27 +199,6 @@ class sqlite_database(object):
 
     def __create_reslut(self):
         pass
-
-    def log_ldstr(self, inst_addr, inst_name):
-        conn = connect(self.database)
-        c = conn.cursor()
-
-        # Make sure that cycles is unique
-        c.execute("SELECT * FROM {tn} WHERE {cn}=({val})"\
-             .format(tn=self.branch_tbl, cn=self.address_col, val=inst_addr))
-        if c.fetchone() != None:
-            conn.close()
-            cprint("Conflict in log_branch, primary key instruction address collision", 'red')
-            cprint("Exiting")
-            exit()
-
-        c.execute("INSERT INTO {tn} ({c1}, {c2}) VALUES ({t1}, '{t2}')"
-             .format(tn=self.branch_tbl,
-             c1=self.address_col, c2=self.inst_name_col, \
-             t1=inst_addr, t2=str(inst_name)))
-
-        conn.commit()
-        conn.close()
 
     def log_ldstr(self, inst_addr, cache, cycles_diff, cycles_total, ldstr, ldstr_addr, inst_name):
         conn = connect(self.database)
