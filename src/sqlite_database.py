@@ -28,7 +28,6 @@ def record_tags(sqlite_database):
 def assembly_golden_run(sqlite_database, debugger):
     cprint("Running assembly golden run", 'yellow')
 
-
     cprint("\tGetting username and ip...", 'yellow')
 
     username = subprocess.check_output("cat ../login_info | awk -F = '/user/{ print $2 }'", shell=True)
@@ -134,10 +133,10 @@ class sqlite_database(object):
         return database
 
     def __initialize_params(self):
-        # Fields for the load / store table
-        self.ldstr_tbl         = "loadstore"
 
-        self.cycles_total_col  = "cycles_total" #Primary Key
+        # Fields for the load / store table
+        self.ldstr_inst_tbl    = "ls_inst"
+        self.cycles_total_col  = "cycles_total"
         self.cycles_total_type = "INTEGER"
         self.cycles_diff_col   = "cycles_diff"
         self.cycles_diff_type  = "INTEGER"
@@ -166,7 +165,7 @@ class sqlite_database(object):
         self.end_cycle_type    = "INTEGER"
 
         #Save the tables in a list to make printing and changing the database easier
-        self.table_list = [self.ldstr_tbl, self.inject_tbl]
+        self.table_list = [self.ldstr_inst_tbl, self.inject_tbl]
 
     def __initialize_database(self):
         print(colored("\tInitializing database...", 'yellow'))
@@ -175,8 +174,8 @@ class sqlite_database(object):
         c = conn.cursor()
 
         # Add to database
-        c.execute('CREATE TABLE {tn} ({c1} {t1} PRIMARY KEY, {c2} {t2}, {c3} {t3}, {c4} {t4}, {c5} {t5}, {c6} {t6}, {c7} {t7})'\
-            .format(tn=self.ldstr_tbl,\
+        c.execute('CREATE TABLE {tn} ({c1} {t1}, {c2} {t2}, {c3} {t3}, {c4} {t4}, {c5} {t5}, {c6} {t6}, {c7} {t7})'\
+            .format(tn=self.ldstr_inst_tbl,\
                     c1=self.cycles_total_col, t1=self.cycles_total_type,\
                     c2=self.cycles_diff_col, t2=self.cycles_diff_type,\
                     c3=self.address_col, t3=self.address_type,\
@@ -199,27 +198,6 @@ class sqlite_database(object):
 
     def __create_reslut(self):
         pass
-
-    def log_ldstr(self, inst_addr, cache, cycles_diff, cycles_total, ldstr, ldstr_addr, inst_name):
-        conn = connect(self.database)
-        c = conn.cursor()
-
-        # Make sure that cycles is unique
-        c.execute("SELECT * FROM {tn} WHERE {cn}=({val})"\
-             .format(tn=self.ldstr_tbl, cn=self.address_col, val=inst_addr))
-        if c.fetchone() != None:
-            conn.close()
-            cprint("Conflict in log_ldstr, primary key instruction address collision", 'red')
-            cprint("Exiting")
-            exit()
-
-        c.execute("INSERT INTO {tn} ({c1}, {c2}, {c3}, {c4}, {c5}, {c6}, {c7}) VALUES ({t1}, {t2}, {t3}, {t4}, {t5}, '{t6}', '{t7}')"
-             .format(tn=self.ldstr_tbl,
-             c1=self.address_col, c2=self.cache_set_col, c3=self.cycles_diff_col, c4=self.cycles_total_col, c5=self.ldstr_col, c6=self.ldstr_addr_col, c7=self.inst_name_col,\
-             t1=inst_addr, t2=cache, t3=cycles_diff, t4=cycles_total, t5=ldstr, t6=str(ldstr_addr), t7=inst_name))
-
-        conn.commit()
-        conn.close()
 
     def log_tags(self, start_addr, end_addr):
         print("Adding start and end tag addresses.", start_addr, end_addr)
