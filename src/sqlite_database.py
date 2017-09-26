@@ -37,27 +37,19 @@ def assembly_golden_run(sqlite_database, debugger):
             inst_addr = int(inst_addr, 16)
 
             # TODO: Double check. Cutting of binary bits in this way is clever.
+            # TODO: Move to asm_golden_run? Should be of ls_addr right?
             bin_addr = bin(inst_addr)
             bin_addr = bin_addr[:-5]
             bin_addr = bin_addr[-11:]
             bin_addr = int(bin_addr, 2)
             cache = int(str(bin_addr), 10)
 
-            cycles_diff = '-1'
-            cycles_total = '-1'
-
             ldstr_str = subprocess.check_output("echo " + "\"" + str(line) + "\"" + " | awk '{ print $3 }'", shell=True)
             ldstr_str = str(ldstr_str).lstrip("b\'")
             ldstr_str = str(ldstr_str).rstrip(":\\n\\n\'")
-            if re.match('st', ldstr_str) is not None or re.match('push', ldstr_str):
-                ldstr = 1
-            else:
-                ldstr = 0
-            #print(ldstr_str + ", is a: " + str(ldstr))
 
-            ldstr_addr = -1
+            sqlite_database.log_ldstr(inst_addr, ldstr_str)
 
-            sqlite_database.log_ldstr(inst_addr, cache, cycles_diff, cycles_total, ldstr, ldstr_addr, ldstr_str)
     cprint("\tStoring branch instructions...", 'yellow')
     with open("../etc/branch.txt") as ldstr:
         for line in ldstr:
@@ -183,29 +175,39 @@ class sqlite_database(object):
         return database
 
     def __initialize_params(self):
+        # TODO: Not convinced that primary keys are needed
         self.branch_tbl      = "branch"
         self.address_col     = "address" # PRIMARY KEY
         self.address_type    = "INTEGER"
         self.inst_name_col   = "instruction"
         self.inst_name_type  = "TEXT"
 
+        self.ldstr_tbl       = "loadstore"
+        # self.address_col     = "address" # PRIMARY KEY
+        # self.address_type    = "INTEGER"
+        # self.inst_name_col   = "instruction"
+        # self.inst_name_type  = "TEXT"
+
         # Fields for the load / store table
-        self.ldstr_tbl         = "loadstore"
-        # This table uses address columns too
-        #self.address_col      = "address" # PRIMARY KEY
-        #address_type          = "INTEGER"
-        self.cache_set_col     = "cache_set"
-        self.cache_set_type    = "INTEGER"
+        #def add_ldstr_inst(cycles_total, cycles_diff, inst_addr, ldstr_addr):
+        self.ldstr_inst_tbl    = "ls_inst"
+        # self.id_col            = "id" <- not needed: sqlite automatically makes a rowid column
+        # self.id_type           = "INTEGER PRIMARY KEY"
         self.cycles_total_col  = "cycles_total"
-        self.cycles_total_type = "TEXT"
+        self.cycles_total_type = "INTEGER"
         self.cycles_diff_col   = "cycles_diff"
-        self.cycles_diff_type  = "TEXT"
+        self.cycles_diff_type  = "INTEGER"
+        # This table uses address column as well
+        #self.address_col      = "address"
+        #address_type          = "INTEGER"
         self.ldstr_col         = "load0_store1"
         self.ldstr_type        = "INTEGER"
         self.ldstr_addr_col    = "l_s_addr"
-        self.ldstr_addr_type   = "TEXT"
+        self.ldstr_addr_type   = "INTEGER"
         #self.inst_name_col    = "instruction"
         #self.inst_name_type   = "TEXT"
+        self.cache_set_col     = "L2_set"
+        self.cache_set_type    = "INTEGER"
 
         # Execution information for injection (start and stop cycle counts)
         self.inject_tbl        = "injection_info"
@@ -232,8 +234,13 @@ class sqlite_database(object):
         # Add to database
         c.execute('CREATE TABLE {tn} ({c1} {t1} PRIMARY KEY, {c2} {t2})'\
             .format(tn=self.branch_tbl,\
-            c1=self.address_col, t1=self.address_type,\
-            c2=self.inst_name_col, t2=self.inst_name_type))
+                    c1=self.address_col, t1=self.address_type,\
+                    c2=self.inst_name_col, t2=self.inst_name_type))
+
+        c.execute('CREATE TABLE {tn} ({c1} {t1} PRIMARY KEY, {c2} {t2})'\
+            .format(tn=self.ldstr_tbl,\
+                    c1=self.address_col, t1=self.address_type,\
+                    c2=self.inst_name_col, t2=self.inst_name_type))
 
         c.execute('CREATE TABLE {tn} ({c1} {t1} PRIMARY KEY, {c2} {t2}, {c3} {t3}, {c4} {t4}, {c5} {t5})'\
             .format(tn=self.inject_tbl,\
@@ -243,15 +250,15 @@ class sqlite_database(object):
                     c4=self.end_addr_col, t4=self.end_addr_type,\
                     c5=self.end_cycle_col, t5=self.end_cycle_type))
 
-        c.execute('CREATE TABLE {tn} ({c1} {t1} PRIMARY KEY, {c2} {t2}, {c3} {t3}, {c4} {t4}, {c5} {t5}, {c6} {t6}, {c7} {t7})'\
-            .format(tn=self.ldstr_tbl,\
-            c1=self.address_col, t1=self.address_type,\
-            c2=self.cache_set_col, t2=self.cache_set_type,\
-            c3=self.cycles_diff_col, t3=self.cycles_diff_type,\
-            c4=self.cycles_total_col, t4=self.cycles_total_type,\
-            c5=self.ldstr_col, t5=self.ldstr_type,\
-            c6=self.ldstr_addr_col, t6=self.ldstr_addr_type,\
-            c7=self.inst_name_col, t7=self.inst_name_type))
+        c.execute('CREATE TABLE {tn} ({c1} {t1}, {c2} {t2}, {c3} {t3}, {c4} {t4}, {c5} {t5}, {c6} {t6}, {c7} {t7})'\
+            .format(tn=self.ldstr_inst_tbl,\
+                    c1=self.cycles_total_col, t1=self.cycles_total_type,\
+                    c2=self.cycles_diff_col, t2=self.cycles_diff_type,\
+                    c3=self.address_col, t3=self.address_type,\
+                    c4=self.ldstr_col, t4=self.ldstr_type,\
+                    c5=self.ldstr_addr_col, t5=self.ldstr_addr_type,\
+                    c6=self.inst_name_col, t6=self.inst_name_type,\
+                    c7=self.cache_set_col, t7=self.cache_set_type))
 
         conn.commit()
         conn.close()
@@ -263,7 +270,7 @@ class sqlite_database(object):
         conn = connect(self.database)
         c = conn.cursor()
 
-        # Make sure that cycles is unique
+        # Make sure that address is unique
         c.execute("SELECT * FROM {tn} WHERE {cn}=({val})"\
              .format(tn=self.branch_tbl, cn=self.address_col, val=inst_addr))
         if c.fetchone() != None:
@@ -280,7 +287,7 @@ class sqlite_database(object):
         conn.commit()
         conn.close()
 
-    def log_ldstr(self, inst_addr, cache, cycles_diff, cycles_total, ldstr, ldstr_addr, inst_name):
+    def log_ldstr(self, inst_addr, inst_name):
         conn = connect(self.database)
         c = conn.cursor()
 
@@ -293,10 +300,10 @@ class sqlite_database(object):
             cprint("Exiting")
             exit()
 
-        c.execute("INSERT INTO {tn} ({c1}, {c2}, {c3}, {c4}, {c5}, {c6}, {c7}) VALUES ({t1}, {t2}, {t3}, {t4}, {t5}, '{t6}', '{t7}')"
+        c.execute("INSERT INTO {tn} ({c1}, {c2}) VALUES ({t1}, '{t2}')"
              .format(tn=self.ldstr_tbl,
-             c1=self.address_col, c2=self.cache_set_col, c3=self.cycles_diff_col, c4=self.cycles_total_col, c5=self.ldstr_col, c6=self.ldstr_addr_col, c7=self.inst_name_col,\
-             t1=inst_addr, t2=cache, t3=cycles_diff, t4=cycles_total, t5=ldstr, t6=str(ldstr_addr), t7=inst_name))
+             c1=self.address_col, c2=self.inst_name_col,\
+             t1=inst_addr, t2=str(inst_name)))
 
         conn.commit()
         conn.close()
