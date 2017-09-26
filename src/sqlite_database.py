@@ -142,13 +142,13 @@ class sqlite_database(object):
         self.cycles_diff_col   = "cycles_diff"
         self.cycles_diff_type  = "INTEGER"
         self.address_col       = "address"
-        self.address_type      = "TEXT"
+        self.address_type      = "INTEGER"
         self.ldstr_col         = "load0_store1"
         self.ldstr_type        = "INTEGER"
         self.ldstr_addr_col    = "l_s_addr"
         self.ldstr_addr_type   = "INTEGER"
-        self.inst_name_col    = "instruction"
-        self.inst_name_type   = "TEXT"
+        self.inst_name_col     = "instruction"
+        self.inst_name_type    = "TEXT"
         self.cache_set_col     = "L2_set"
         self.cache_set_type    = "INTEGER"
 
@@ -177,13 +177,13 @@ class sqlite_database(object):
         # Add to database
         c.execute('CREATE TABLE {tn} ({c1} {t1} PRIMARY KEY, {c2} {t2}, {c3} {t3}, {c4} {t4}, {c5} {t5}, {c6} {t6}, {c7} {t7})'\
             .format(tn=self.ldstr_tbl,\
-            c1=self.address_col, t1=self.address_type,\
-            c2=self.cache_set_col, t2=self.cache_set_type,\
-            c3=self.cycles_diff_col, t3=self.cycles_diff_type,\
-            c4=self.cycles_total_col, t4=self.cycles_total_type,\
-            c5=self.ldstr_col, t5=self.ldstr_type,\
-            c6=self.ldstr_addr_col, t6=self.ldstr_addr_type,\
-            c7=self.inst_name_col, t7=self.inst_name_type))
+                    c1=self.cycles_total_col, t1=self.cycles_total_type,\
+                    c2=self.cycles_diff_col, t2=self.cycles_diff_type,\
+                    c3=self.address_col, t3=self.address_type,\
+                    c4=self.ldstr_col, t4=self.ldstr_type,\
+                    c5=self.ldstr_addr_col, t5=self.ldstr_addr_type,\
+                    c6=self.inst_name_col, t6=self.inst_name_type,\
+                    c7=self.cache_set_col, t7=self.cache_set_type))
 
         c.execute('CREATE TABLE {tn} ({c1} {t1} PRIMARY KEY, {c2} {t2}, {c3} {t3}, {c4} {t4}, {c5} {t5})'\
             .format(tn=self.inject_tbl,\
