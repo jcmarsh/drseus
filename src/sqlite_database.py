@@ -223,7 +223,7 @@ class sqlite_database(object):
         self.end_cycle_type    = "INTEGER"
 
         #Save the tables in a list to make printing and changing the database easier
-        self.table_list = [self.branch_tbl, self.ldstr_tbl, self.inject_tbl]
+        self.table_list = [self.branch_tbl, self.ldstr_tbl, self.ldstr_inst_tbl, self.inject_tbl]
 
     def __initialize_database(self):
         print(colored("\tInitializing database...", 'yellow'))
