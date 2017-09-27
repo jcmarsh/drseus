@@ -93,6 +93,7 @@ class fault_injector(object):
                         record_tags(self.options.cache_sqlite)
                         #self.debugger.start_dut()
                         # TODO: How to read cycle count?
+                        sleep(1)
                         print("Breaking on", self.options.cache_sqlite.get_start_addr())
                         self.debugger.break_dut(hex(self.options.cache_sqlite.get_start_addr()))
                         start_cycle = self.debugger.check_cycles()
