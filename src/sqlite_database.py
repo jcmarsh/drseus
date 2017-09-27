@@ -98,11 +98,25 @@ def print_sqlite_database(sqlite_database):
             i = 0
             while(i < len(row)):
                 print('|', end="")
-                print(" " + str(row[i]) + (row_spacing - len(str(row[i])) - 1) * " ", end="")
+                # Special cases for injection_info
+                if str(tn) == "injection_info":
+                    if i == 1 or i == 3: # start_tag_addr, end_tag_addr
+                        print(" " + hex(row[i]) + (row_spacing - len(hex(row[i])) - 1) * " ", end="")
+                    else:
+                        print(" " + str(row[i]) + (row_spacing - len(str(row[i])) - 1) * " ", end="")
+                # Special cases for ldstr_inst_tbl
+                elif str(tn) == "ls_inst":
+                    if i == 2 or i == 4: # address and l_s_addr
+                        print(" " + hex(row[i]) + (row_spacing - len(hex(row[i])) - 1) * " ", end="")
+                    else:
+                        print(" " + str(row[i]) + (row_spacing - len(str(row[i])) - 1) * " ", end="")
+                # Everything else
+                else:
+                    print(" " + str(row[i]) + (row_spacing - len(str(row[i])) - 1) * " ", end="")
                 i += 1
             print('|')
 
-        print('-----------------')
+        print('----------------------------------------------------')
 
     print(colored("\n+++++++++++++++++++++++++++++++++++++++++++++++++++++++++\n", 'yellow'))
     conn.close()
