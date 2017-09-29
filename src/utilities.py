@@ -266,6 +266,7 @@ def create_campaign(options):
     else:
         print('created campaign {}'.format(campaign.id))
         call(["scp", "pi@{}:~/jtag_eval/openOCD_cfg/mnt/output.txt".format(options.debugger_ip_address), "./campaign-data/{}/openOCD_output.txt".format(campaign.id)])
+        call(["scp", "pi@{}:~/jtag_eval/openOCD_cfg/mnt/asm_output.txt".format(options.debugger_ip_address), "./campaign-data/{}/asm_golden_run_output.txt".format(campaign.id)])
 
 def inject_campaign(options):
     campaign = get_campaign(options)
