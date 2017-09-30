@@ -159,11 +159,11 @@ class jtag(object):
         event.success = True
         event.save()
 
-    def inject_faults(self):
+    def inject_faults(self, sql_db):
         # Select injection times
         injection_times = []
         for i in range(self.options.injections):
-            injection_times.append(uniform(0, self.db.campaign.execution_time))
+            injection_times.append(uniform(sql_db.get_start_cycle(), sql_db.get_end_cycle()))
 
         # Select targets and injection object
         injections = []
@@ -179,6 +179,7 @@ class jtag(object):
         print("Injections:")
         for injection in injections:
             print("\tInjection:", injection.target)
+            print(injection)
         print("Possible targets:")
         for target in self.targets:
             print("\tTarget:", target)
@@ -196,8 +197,18 @@ class jtag(object):
         for injection in injections:
             if injection.target in ('CPU', 'GPR', 'TLB') or ('CP' in self.targets[injection.target] and self.targets[injection.target]['CP']):
                 self.select_core(injection.target_index)
-            sleep(injection.time-previous_injection_time)
-            self.halt_dut()
+
+            # For cache injection:
+            # Select the desired cache line (already done?)
+            # From the stopping time, find all future reads and writes
+            (addr, break_number) = sql_db.get_next_load(injection.time)
+            print("Going to inject on this guy %s" % addr)
+
+            # TODO: Deal with single instruction running multiple times
+            # Set breakpoint on instruction close to cycle count
+            # TODO: Consider adding every single instruction for targeting non-cache
+
+
             previous_injection_time = injection.time
             injection.processor_mode = self.get_mode()
             if 'access' in (self.targets[injection.target]

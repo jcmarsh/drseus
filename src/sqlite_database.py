@@ -210,8 +210,23 @@ class sqlite_database(object):
         conn.commit()
         conn.close()
 
+    # TODO: What is a reslut?
     def __create_reslut(self):
         pass
+
+    # Given a cycle count, find the following load instructions.
+    # addr, break_number = sql_db.get_next_load(injection.time)
+    def get_next_load(self, cycle):
+        print("Get next load...")
+        conn = connect(self.database)
+        c = conn.cursor()
+
+        # SELECT * FROM ls_inst WHERE cycles_total > 18000 AND load0_store1 = 0 LIMIT 1;
+        c.execute("SELECT address FROM {} WHERE {} > {} AND {} = 0 LIMIT 1;".format(self.ldstr_inst_tbl, self.cycles_total_col, cycle, self.ldstr_col))
+        address = c.fetchone()[0]
+
+        # TODO: Use the address to figure out the number of times you need to break first.
+        return (address, 1)
 
     def log_tags(self, start_addr, end_addr):
         print("Adding start and end tag addresses.", start_addr, end_addr)
@@ -244,11 +259,35 @@ class sqlite_database(object):
         conn.close()
         return retval
 
+    def get_start_cycle(self):
+        conn = connect(self.database)
+        c = conn.cursor()
+
+        # SELECT MIN(cycles_total) FROM ls_inst
+        c.execute("SELECT MIN({}) FROM {}".format(self.cycles_total_col, self.ldstr_inst_tbl))
+        retval = c.fetchone()[0]
+
+        conn.commit()
+        conn.close()
+        return retval
+
     def get_end_addr(self):
         conn = connect(self.database)
         c = conn.cursor()
 
         c.execute("SELECT {} FROM {}".format(self.end_addr_col, self.inject_tbl))
+        retval = c.fetchone()[0]
+
+        conn.commit()
+        conn.close()
+        return retval
+
+    def get_end_cycle(self):
+        conn = connect(self.database)
+        c = conn.cursor()
+
+        # SELECT MAX(cycles_total) FROM ls_inst
+        c.execute("SELECT MAX({}) FROM {}".format(self.cycles_total_col, self.ldstr_inst_tbl))
         retval = c.fetchone()[0]
 
         conn.commit()

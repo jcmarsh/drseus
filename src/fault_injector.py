@@ -11,7 +11,7 @@ from .jtag.bdi import bdi
 from .jtag.dummy import dummy
 from .jtag.openocd import openocd
 from .simics import simics
-from .sqlite_database import sqlite_database, print_sqlite_database, assembly_golden_run, record_tags
+from .sqlite_database import sqlite_database, print_sqlite_database, assembly_golden_run, record_tags, get_database_path
 
 from .sqlite_test import run_sqlite_tests
 
@@ -324,6 +324,9 @@ class fault_injector(object):
                     sleep(sleep_time)
 
         def perform_injections():
+            print("Using database: %s" % (get_database_path(self.options)))
+            sql_db = sqlite_database(self.options, get_database_path(self.options))
+            print("Start cycle: %d" % (sql_db.get_start_cycle()))
             if timer is not None:
                 start = perf_counter()
             while True:
@@ -364,7 +367,7 @@ class fault_injector(object):
                 log_thread = Thread(target=background_log)
                 try:
                     # Run the program while injected some number of faults
-                    (self.db.result.num_register_diffs, self.db.result.num_memory_diffs, persistent_faults) = self.debugger.inject_faults()
+                    (self.db.result.num_register_diffs, self.db.result.num_memory_diffs, persistent_faults) = self.debugger.inject_faults(sql_db)
                     if self.options.log_delay is not None:
                         log_thread.start()
                 except DrSEUsError as error:
