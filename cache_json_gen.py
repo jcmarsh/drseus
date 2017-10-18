@@ -52,7 +52,7 @@ def create_cache(size, assoc, data_size, flag_bits, count):
                 fields.append(["data_%d" % index, data])
                 fields.append(["flag_%d" % index, flag])
         # cacheline = {"fields": [["tag", tag], ["data", data], ["flag", flag]]}
-	cacheline = {"bits": int(assoc * (tag_bits + data_size + flag_bits)), "fields": fields}
+	cacheline = {"bits": int(assoc * (tag_bits + data_size + flag_bits)), "ways": assoc, "fields": fields}
 
 	# Need to add the ways for fields (tag_0-3, data 0_3, etc)
 	registers = {}
