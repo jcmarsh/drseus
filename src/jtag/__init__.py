@@ -163,7 +163,7 @@ class jtag(object):
         # Select injection times
         injection_times = []
         for i in range(self.options.injections):
-            injection_times.append(uniform(sql_db.get_start_cycle(), sql_db.get_end_cycle()))
+            injection_times.append(int(uniform(sql_db.get_start_cycle(), sql_db.get_end_cycle())))
 
         # Select targets and injection object
         injections = []
@@ -179,7 +179,8 @@ class jtag(object):
         print("Injections:")
         for injection in injections:
             print("\tInjection:", injection.target)
-            print(injection)
+            print("\t", injection)
+            print("\t", injection.bit, " ", injection.field)
         print("Possible targets:")
         for target in self.targets:
             print("\tTarget:", target)
@@ -209,6 +210,7 @@ class jtag(object):
             # TODO: Consider adding every single instruction for targeting non-cache
 
 
+            # Needs to have processor halted at correct point here.
             previous_injection_time = injection.time
             injection.processor_mode = self.get_mode()
             if 'access' in (self.targets[injection.target]
