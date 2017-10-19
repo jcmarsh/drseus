@@ -228,6 +228,19 @@ class sqlite_database(object):
         # TODO: Use the address to figure out the number of times you need to break first.
         return (address, 1)
 
+    # Given a cycle count, cache set, and n, find the n previous unique addresses that loaded / stored in that set
+    # addrs = sql_db.get_prev_load_stores(injection.time, cache_set, ways)
+    def get_prev_load_stores(cycle, cache_set, ways):
+        print("Get the %d stores / loads to %d prior to cycle %d" % (ways, cache_set, cycle))
+        addrs = []
+        conn = connect(self.database)
+        c = conn.cursor()
+
+        # Some database magic here.
+        # Cache set... Needs to be filled in in the database. Sigh.
+
+        return addrs
+
     def log_tags(self, start_addr, end_addr):
         print("Adding start and end tag addresses.", start_addr, end_addr)
         conn = connect(self.database)

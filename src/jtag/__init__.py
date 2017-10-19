@@ -170,6 +170,7 @@ class jtag(object):
         if hasattr(self, 'targets') and self.targets:
             for injection_time in sorted(injection_times):
                 injection = choose_injection(self.targets, self.options.selected_target_indices)
+                print(injection)
                 injection = self.db.result.injection_set.create(success=False, time=injection_time, **injection)
                 injections.append(injection)
 
@@ -180,7 +181,7 @@ class jtag(object):
         for injection in injections:
             print("\tInjection:", injection.target)
             print("\t", injection)
-            print("\t", injection.bit, " ", injection.field)
+            print("\t", injection.bit, " ", injection.field, " ", injection.register)
         print("Possible targets:")
         for target in self.targets:
             print("\tTarget:", target)
@@ -199,16 +200,33 @@ class jtag(object):
             if injection.target in ('CPU', 'GPR', 'TLB') or ('CP' in self.targets[injection.target] and self.targets[injection.target]['CP']):
                 self.select_core(injection.target_index)
 
-            # For cache injection:
-            # Select the desired cache line (already done?)
-            # From the stopping time, find all future reads and writes
-            (addr, break_number) = sql_db.get_next_load(injection.time)
-            print("Going to inject on this guy %s" % addr)
+            if (injection.target == 'CACHE_L2'):
+                # For cache injection:
+                # Select the desired cache line (injection.bit / injection.field)
+                # From the stopping time, find all future reads and writes
+                cache_set = int(injection.register[-4:])
+                print("Is cache_set being set for the cache? ", cache_set)
+                ways = 8 # Hardcoding for L2 cache
+                way_impacted = randrange(0,8)
+                addrs = sql_db.get_prev_load_stores(injection.time, cache_set, ways)
+                print("Going to inject on this guy %s on the %dth time." % (addrs[way_impacted]))
 
-            # TODO: Deal with single instruction running multiple times
-            # Set breakpoint on instruction close to cycle count
-            # TODO: Consider adding every single instruction for targeting non-cache
+                # Check if any injections need to be performed
+                # Summary: Pick the impacted cache set, find the address corresponding to resident values, pick one address to use injections.
+                # For Round Robin policy:
+                #   * W is the number of ways (4-way, 8-way)
+                #   * Find the previous W unique stores / loads from that set
+                #     This tells you what was in the cache. Unique as in target address (avoids bias with a single popular address)
+                #   * Pick one of them at random to be the impacted way (if less than W, each valid way still has only an 1/W chance of being hit)
+                #   * Find all following cached loads from that address up until the next store to that address or uncached load from that address
+                #     * Those (if any) are the ones injected on.
+                #   * Assume that all ways are unlocked and valid
 
+                previous_fills = sql_db.get_prev_load_store(cache_set, ways)
+
+                # TODO: Deal with single instruction running multiple times
+                # Run until the load instruction first executes
+                self.break_dut_after(addr, break_number) # runs from the beginning...
 
             # Needs to have processor halted at correct point here.
             previous_injection_time = injection.time

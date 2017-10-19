@@ -311,6 +311,7 @@ def choose_injection(targets, selected_target_indices):
         if 'fields' in register and 'ways' in register:
             bit_sum = 0
             ways = int(register['ways'])
+            # TODO: target_way doesn't matter here. jtag/__init__.py assumes an even distribution and picks randomly
             target_way = int(injection['bit'] / (int(register['bits']) / ways))
             bit_in_way = int(injection['bit'] % (int(register['bits']) / ways))
             print("Target way: ", target_way, " Target bit: ", bit_in_way)
