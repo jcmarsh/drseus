@@ -106,7 +106,7 @@ def print_sqlite_database(sqlite_database):
                         print(" " + str(row[i]) + (row_spacing - len(str(row[i])) - 1) * " ", end="")
                 # Special cases for ldstr_inst_tbl
                 elif str(tn) == "ls_inst":
-                    if i == 2 or i == 4: # address and l_s_addr
+                    if i == 2 or i == 4 or i == 6: # address, l_s_addr, or L2_set
                         print(" " + hex(row[i]) + (row_spacing - len(hex(row[i])) - 1) * " ", end="")
                     else:
                         print(" " + str(row[i]) + (row_spacing - len(str(row[i])) - 1) * " ", end="")
@@ -209,10 +209,6 @@ class sqlite_database(object):
 
         conn.commit()
         conn.close()
-
-    # TODO: What is a reslut?
-    def __create_reslut(self):
-        pass
 
     # Given a cycle count, find the following load instructions.
     # addr, break_number = sql_db.get_next_load(injection.time)
