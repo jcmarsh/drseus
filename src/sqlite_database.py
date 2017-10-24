@@ -4,7 +4,7 @@ from os import makedirs, remove
 from os.path import isfile
 from termcolor import colored, cprint
 from sqlite3 import connect
-from .jtag.openocd import openocd
+# from .jtag.openocd import openocd
 from time import sleep
 
 from .database import get_campaign
@@ -224,18 +224,38 @@ class sqlite_database(object):
         # TODO: Use the address to figure out the number of times you need to break first.
         return (address, 1)
 
-    # Given a cycle count, cache set, and n, find the n previous unique addresses that loaded / stored in that set
-    # addrs = sql_db.get_prev_load_stores(injection.time, cache_set, ways)
-    def get_prev_load_stores(cycle, cache_set, ways):
-        print("Get the %d stores / loads to %d prior to cycle %d" % (ways, cache_set, cycle))
-        addrs = []
+    # Given a cycle count and cache set find the addresses that loaded / stored in that set
+    # return the address or null if none
+    def PreviousLdrStr(cycle, cache_set):
+        print("Get the stores / loads to %d prior to cycle %d" % (cache_set, cycle))
+        # address, cycle
         conn = connect(self.database)
         c = conn.cursor()
 
-        # Some database magic here.
+        # Should just find the prvious load or store. Calling function worries about uniqueness.
+        # Just want to know what is resident in the cache.
+
+        # Multi loads / stores complicate things... need to get all of the accesses from the same command and then pass them back one at a time
+        # Cache lines are 8 Words... addresses need to lose last three bits (offset)
+        # SELECT l_s_addr FROM ls_inst WHERE cycles_total < 30500 AND L2_set = 1531 ORDER BY cycles_total DESC LIMIT 1;
+
+        # Get the cycles of the line that matches the criteria
+        # SELECT cycles_total FROM ls_inst WHERE cycles_total < 30500 AND L2_set = 1531 ORDER BY cycles_total DESC LIMIT 1;
+        c.execute("SELECT cycles_total FROM ls_inst WHERE cycles_total < {} AND L2_set = {} ORDER BY cycles_total DESC LIMIT 1".format(cycle, cache_set))
+        found_cycles = c.fetchone()[0]
+
+        if found_cycles == None:
+            return None, None
+
+        # Get all lines that match that cycles_total (accounts for multi loads / stores)
+        c.execute("SELECT * FROM ls_inst WHERE cycles_total = {} AND L2_set = {}".format(found_cycles, cache_set))
+        retval = c.fetchall()
+        print(retval)
+
         # Cache set... Needs to be filled in in the database. Sigh.
 
-        return addrs
+        return found_cycles, addrs
+
 
     def log_tags(self, start_addr, end_addr):
         print("Adding start and end tag addresses.", start_addr, end_addr)

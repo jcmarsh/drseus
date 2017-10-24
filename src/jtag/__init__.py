@@ -159,6 +159,17 @@ class jtag(object):
         event.success = True
         event.save()
 
+    def PrevAccess(self, cycle, cache_set, assoc):
+        candidates = {}
+        current_cycle = cycle;
+        while candidates.size() < assoc:
+            addresss, cycle = self.db.PreviousLdrStr(current_cycle, cache_set)
+            if address = None:
+                return candidates
+            if not (address in candidates):
+                candidates.add(address)
+        return candidates
+
     def inject_faults(self, sql_db):
         # Select injection times
         injection_times = []
@@ -207,9 +218,16 @@ class jtag(object):
                 cache_set = int(injection.register[-4:])
                 print("Is cache_set being set for the cache? ", cache_set)
                 ways = 8 # Hardcoding for L2 cache
+
+                # While still finding them, do this...
+                # Test code for now...
+                candidates = PrevAccess(30500, 1531, ways)
+
+                print("Candidate addresses for the injection!: ", candidates)
+
                 way_impacted = randrange(0,8)
-                addrs = sql_db.get_prev_load_stores(injection.time, cache_set, ways)
-                print("Going to inject on this guy %s on the %dth time." % (addrs[way_impacted]))
+
+                print("Going to inject on this guy %s on the %dth time." % (candidates[way_impacted]))
 
                 # Check if any injections need to be performed
                 # Summary: Pick the impacted cache set, find the address corresponding to resident values, pick one address to use injections.
@@ -222,7 +240,6 @@ class jtag(object):
                 #     * Those (if any) are the ones injected on.
                 #   * Assume that all ways are unlocked and valid
 
-                previous_fills = sql_db.get_prev_load_store(cache_set, ways)
 
                 # TODO: Deal with single instruction running multiple times
                 # Run until the load instruction first executes
