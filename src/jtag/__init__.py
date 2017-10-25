@@ -159,12 +159,13 @@ class jtag(object):
         event.success = True
         event.save()
 
-    def PrevAccess(self, cycle, cache_set, assoc):
-        candidates = {}
+    # TODO: Doesn't need to be a class function
+    def PrevAccess(self, sql_db, cycle, cache_set, assoc):
+        candidates = []
         current_cycle = cycle;
-        while candidates.size() < assoc:
-            addresss, cycle = self.db.PreviousLdrStr(current_cycle, cache_set)
-            if address = None:
+        while len(candidates) < assoc:
+            addresss, cycle = sql_db.PreviousLdrStr(current_cycle, cache_set)
+            if address == None:
                 return candidates
             if not (address in candidates):
                 candidates.add(address)
@@ -221,7 +222,7 @@ class jtag(object):
 
                 # While still finding them, do this...
                 # Test code for now...
-                candidates = PrevAccess(30500, 1531, ways)
+                candidates = self.PrevAccess(sql_db, 30500, 1531, ways)
 
                 print("Candidate addresses for the injection!: ", candidates)
 

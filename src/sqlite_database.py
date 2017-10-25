@@ -226,7 +226,7 @@ class sqlite_database(object):
 
     # Given a cycle count and cache set find the addresses that loaded / stored in that set
     # return the address or null if none
-    def PreviousLdrStr(cycle, cache_set):
+    def PreviousLdrStr(self, cycle, cache_set):
         print("Get the stores / loads to %d prior to cycle %d" % (cache_set, cycle))
         # address, cycle
         conn = connect(self.database)
@@ -248,13 +248,25 @@ class sqlite_database(object):
             return None, None
 
         # Get all lines that match that cycles_total (accounts for multi loads / stores)
-        c.execute("SELECT * FROM ls_inst WHERE cycles_total = {} AND L2_set = {}".format(found_cycles, cache_set))
+        c.execute("SELECT l_s_addr FROM ls_inst WHERE cycles_total = {} AND L2_set = {}".format(found_cycles, cache_set))
         retval = c.fetchall()
+        if len(retval) > 1:
+            # A single command is accessing multiple lines, save others for future calls... what if multple injections in a run?
+            stored_address = []
+            stored_cycles = found_cycles
+            stored_cache_set = cache_set
+            for i in range(1, len(retval)):
+                stored_address.add(retval[i])
+
+        # send back one
+
+
+        print("Word")
         print(retval)
 
         # Cache set... Needs to be filled in in the database. Sigh.
 
-        return found_cycles, addrs
+        return found_cycles, retval[0]
 
 
     def log_tags(self, start_addr, end_addr):
