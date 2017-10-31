@@ -164,11 +164,11 @@ class jtag(object):
         candidates = []
         current_cycle = cycle;
         while len(candidates) < assoc:
-            addresss, cycle = sql_db.PreviousLdrStr(current_cycle, cache_set)
+            current_cycle, address = sql_db.PreviousLdrStr(current_cycle, cache_set)
             if address == None:
                 return candidates
             if not (address in candidates):
-                candidates.add(address)
+                candidates.append(address)
         return candidates
 
     def inject_faults(self, sql_db):

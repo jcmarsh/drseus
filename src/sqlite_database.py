@@ -123,6 +123,11 @@ def print_sqlite_database(sqlite_database):
 
 class sqlite_database(object):
     def __init__(self, options, database_path=None):
+        # Needed to search previous entries...
+        self.stored_address = []
+        self.stored_cycles = 0
+        self.stored_cache_set = None
+
         self.options = options
         self.campaign = get_campaign(options)
         #TODO check to make sure the database still exists
@@ -228,6 +233,15 @@ class sqlite_database(object):
     # return the address or null if none
     def PreviousLdrStr(self, cycle, cache_set):
         print("Get the stores / loads to %d prior to cycle %d" % (cache_set, cycle))
+
+        # Return saved address from a multi-access command
+        if (self.stored_cache_set == cache_set):
+            retval = self.stored_address.pop()
+            if len(self.stored_address) == 0:
+                self.stored_cache_set = None
+            print("Multi, counting down: ", len(self.stored_address))
+            return self.stored_cycles, retval
+
         # address, cycle
         conn = connect(self.database)
         c = conn.cursor()
@@ -242,25 +256,28 @@ class sqlite_database(object):
         # Get the cycles of the line that matches the criteria
         # SELECT cycles_total FROM ls_inst WHERE cycles_total < 30500 AND L2_set = 1531 ORDER BY cycles_total DESC LIMIT 1;
         c.execute("SELECT cycles_total FROM ls_inst WHERE cycles_total < {} AND L2_set = {} ORDER BY cycles_total DESC LIMIT 1".format(cycle, cache_set))
-        found_cycles = c.fetchone()[0]
-
-        if found_cycles == None:
+        retval = c.fetchone()
+        if retval == None:
             return None, None
+        found_cycles = retval[0]
 
         # Get all lines that match that cycles_total (accounts for multi loads / stores)
         c.execute("SELECT l_s_addr FROM ls_inst WHERE cycles_total = {} AND L2_set = {}".format(found_cycles, cache_set))
         retval = c.fetchall()
         if len(retval) > 1:
             # A single command is accessing multiple lines, save others for future calls... what if multple injections in a run?
-            stored_address = []
-            stored_cycles = found_cycles
-            stored_cache_set = cache_set
-            for i in range(1, len(retval)):
-                stored_address.add(retval[i])
+            self.stored_address = []
+            self.stored_cycles = found_cycles
+            self.stored_cache_set = cache_set
+            for i in range(0, len(retval)): # TODO: Make go in reverse?
+                self.stored_address.append(retval[i][0])
+            print("Multi- FIRST")
+            asdf = self.stored_address.pop()
+            print("Addresses: ", self.stored_address)
+            print("Returning: ", self.stored_cycles, " ", asdf)
+            return self.stored_cycles, asdf
 
         # send back one
-
-
         print("Word")
         print(retval)
 
