@@ -218,15 +218,19 @@ class jtag(object):
                 # From the stopping time, find all future reads and writes
                 cache_set = int(injection.register[-4:])
                 print("Is cache_set being set for the cache? ", cache_set)
-                ways = 8 # Hardcoding for L2 cache
+                ways = 8 # TODO: Hardcoding for L2 cache
 
                 # While still finding them, do this...
                 # Test code for now...
                 candidates = self.PrevAccess(sql_db, 30500, 1531, ways)
+                # Candidates are the addresses of the data in the cache shifted to remove the byte offset
+                #   Since there are 32 bytes in each cache line, that means >> 5
 
                 print("Candidate addresses for the injection!: ", candidates)
 
-                way_impacted = randrange(0,8)
+                # Parse from injection.field: 84   data_2   cacheline_1455
+                # TODO: limits to a 1 digit number of ways
+                way_impacted = int(injection.field[-1:])
 
                 print("Going to inject on this guy %s on the %dth time." % (candidates[way_impacted]))
 

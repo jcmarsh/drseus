@@ -239,7 +239,7 @@ class sqlite_database(object):
             retval = self.stored_address.pop()
             if len(self.stored_address) == 0:
                 self.stored_cache_set = None
-            print("Multi, counting down: ", len(self.stored_address))
+            # print("Multi, counting down: ", len(self.stored_address))
             return self.stored_cycles, retval
 
         # address, cycle
@@ -261,6 +261,8 @@ class sqlite_database(object):
             return None, None
         found_cycles = retval[0]
 
+        # 32 bytes to a line, so shift the address right by 5
+
         # Get all lines that match that cycles_total (accounts for multi loads / stores)
         c.execute("SELECT l_s_addr FROM ls_inst WHERE cycles_total = {} AND L2_set = {}".format(found_cycles, cache_set))
         retval = c.fetchall()
@@ -270,20 +272,15 @@ class sqlite_database(object):
             self.stored_cycles = found_cycles
             self.stored_cache_set = cache_set
             for i in range(0, len(retval)): # TODO: Make go in reverse?
-                self.stored_address.append(retval[i][0])
+                self.stored_address.append(retval[i][0] >> 5) # Shift to remove byte offset from address.
             print("Multi- FIRST")
             asdf = self.stored_address.pop()
             print("Addresses: ", self.stored_address)
             print("Returning: ", self.stored_cycles, " ", asdf)
             return self.stored_cycles, asdf
 
-        # send back one
-        print("Word")
-        print(retval)
-
-        # Cache set... Needs to be filled in in the database. Sigh.
-
-        return found_cycles, retval[0]
+        # Single match found, return
+        return found_cycles, retval[0][0] >> 5 # Shift to remove byte offset from address.
 
 
     def log_tags(self, start_addr, end_addr):
