@@ -222,15 +222,54 @@ class jtag(object):
 
                 # While still finding them, do this...
                 # Test code for now...
-                candidates = self.PrevAccess(sql_db, 30500, 1531, ways)
+                candidates = self.PrevAccess(sql_db, 30500, 1531, 8)
+                # candidates = self.PrevAccess(sql_db, injection.time, cache_set, ways)
                 # Candidates are the addresses of the data in the cache shifted to remove the byte offset
                 #   Since there are 32 bytes in each cache line, that means >> 5
+                #   TODO: Make sure byte addressable and not word addressable.
 
                 print("Candidate addresses for the injection!: ", candidates)
 
                 # Parse from injection.field: 84   data_2   cacheline_1455
                 # TODO: limits to a 1 digit number of ways
-                way_impacted = int(injection.field[-1:])
+                #way_impacted = int(injection.field[-1:])
+                way_impacted = 0
+
+                if way_impacted >= len(candidates):
+                    print("No fault injected: cache line was not valid.")
+                    # TODO: How to return from this?
+                    return None, None, False
+
+                # target picked, so now need all following accesses (until a store or slow load)
+                # For out example (way 0 of cache line 1531 at cycle 30500, address 1097584 for fib_short):
+                #   SELECT * FROM ls_inst WHERE L2_set = 1531 AND l_s_addr = 1097584 AND cycles_total > 30500;
+                #   30586|14|1055908|0|1097584|LDM|1531
+                #   31133|13|1055900|1|1097584|STM|1531 <- don't return... signals end.
+                #injection_targets = sql_db.NextLdrStr(cycle, cache_set, (candidates[way_impacted] << 5) + injection.bit)
+                injection_targets = sql_db.NextLdrStr(30500, 1531, (candidates[way_impacted] << 5) + 16)
+                print("Injection targets: ", injection_targets)
+
+                if (len(injection_targets) == 0):
+                    print("No Fault injected: value in cache never read.")
+                    # TODO: How to return from this?
+                    return None, None, False
+
+                # Need advance the DUT to the first injection
+                # On first injection, figure out the corrupted bit
+                # On all injections, figure out the target and load the wrong value and continue.
+                #skip_count = sql_db.SkipCount(injection_cycle...?, address)
+                skip_count = sql_db.SkipCount(30500, injection_targets[0], (candidates[way_impacted] << 5) + 16)
+                print("Skip Count! ", skip_count)
+                # TODO advance dut
+                inject_value = None
+                #for target in targets:
+                    #if inject_value == None:
+                        # read the value currently in cache
+                    # find target
+                    # inject fault
+                    # set next breakpoint
+                    # continue
+
 
                 print("Going to inject on this guy %s on the %dth time." % (candidates[way_impacted]))
 

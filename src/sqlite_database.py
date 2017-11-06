@@ -215,6 +215,19 @@ class sqlite_database(object):
         conn.commit()
         conn.close()
 
+    # Return the number of breakpoints that must be skipped to reach the first execution of the
+    #   instruction (address) after a given cycle. The load / store address is used to 
+    #   deal with commands that access multiple memory locations.
+    def SkipCount(self, cycle, address, l_s_addr):
+        print("Get the Skip Count for ", address, " after cycle ", cycle, " (ls_addr: ", l_s_addr, ")")
+        conn = connect(self.database)
+        c = conn.cursor()
+
+        c.execute("SELECT * FROM ls_inst WHERE cycles_total < {} AND address = {} AND l_s_addr = {}".format(cycle, address, l_s_addr))
+        retval = c.fetchall()
+
+        return len(retval)
+
     # Given a cycle count, find the following load instructions.
     # addr, break_number = sql_db.get_next_load(injection.time)
     def get_next_load(self, cycle):
@@ -223,14 +236,49 @@ class sqlite_database(object):
         c = conn.cursor()
 
         # SELECT * FROM ls_inst WHERE cycles_total > 18000 AND load0_store1 = 0 LIMIT 1;
-        c.execute("SELECT address FROM {} WHERE {} > {} AND {} = 0 LIMIT 1;".format(self.ldstr_inst_tbl, self.cycles_total_col, cycle, self.ldstr_col))
+        c.execute("SELECT address FROM {} WHERE {} > {} AND {} = 0 LIMIT 1".format(self.ldstr_inst_tbl, self.cycles_total_col, cycle, self.ldstr_col))
         address = c.fetchone()[0]
 
         # TODO: Use the address to figure out the number of times you need to break first.
         return (address, 1)
 
+    # Given a cycle count, cache set, and address (with byte offset; this is the target word) for the impacted way
+    # return the list of accesses up until the first store or slow load
+    def NextLdrStr(self, cycle, cache_set, address):
+        print("Get the next stores / loads for %d / %d after cycle %d" % (cache_set, address, cycle))
+
+        conn = connect(self.database)
+        c = conn.cursor()
+
+        c.execute("SELECT * FROM ls_inst WHERE cycles_total > {} AND L2_set = {} AND l_s_addr = {} ORDER BY cycles_total ASC". format(cycle, cache_set, address))
+        retval = c.fetchall()
+        if retval == None:
+            return None
+
+        targets = []
+        for possible in retval:
+            print ("Hey, look here!: ", possible)
+
+            if (possible[3] == 1):
+                # It's a store. Return
+                return targets
+            elif (possible[1] > 30):
+                # it's a load, but from backing memory
+                print("*****************************")
+                print("* Load from backing memory! *")
+                print("*****************************")
+                return targets
+            else:
+                # Load from cache, so an actual target
+                print("*****************************")
+                print("* Load from target cache!   *")
+                print("*****************************")
+                targets.append(possible[2])
+
+        return targets
+
     # Given a cycle count and cache set find the addresses that loaded / stored in that set
-    # return the address or null if none
+    # return the cycle and address or None
     def PreviousLdrStr(self, cycle, cache_set):
         print("Get the stores / loads to %d prior to cycle %d" % (cache_set, cycle))
 
