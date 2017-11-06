@@ -258,13 +258,25 @@ class jtag(object):
                 # On first injection, figure out the corrupted bit
                 # On all injections, figure out the target and load the wrong value and continue.
                 #skip_count = sql_db.SkipCount(injection_cycle...?, address)
-                skip_count = sql_db.SkipCount(30500, injection_targets[0], (candidates[way_impacted] << 5) + 16)
+                prev_cycle = injection_targets[0][0]
+                skip_count = sql_db.SkipCount(0, prev_cycle, injection_targets[0][1]) #, (candidates[way_impacted] << 5) + 16)
                 print("Skip Count! ", skip_count)
-                # TODO advance dut
+
+                # Skip the first
+                # TODO: This first needs to run until the start tag (but this function restarts)
+                self.break_dut_after(str(injection_targets[0][1]), skip_count) # runs from the beginning, Removes breakpoint.
+
                 inject_value = None
-                #for target in targets:
-                    #if inject_value == None:
-                        # read the value currently in cache
+                for target in injection_targets:
+                    # Set breakpoint
+                    print("Target: ", target)
+                    skip_count = sql_db.SkipCount(prev_cycle, target[0], target[1])
+                    if (skip_count >= 1):
+                        print("********************************")
+                        print("* Need to implement this case! *")
+                        print("********************************")
+                    self.single_dut_break(str(target[1]))
+
                     # find target
                     # inject fault
                     # set next breakpoint
@@ -284,10 +296,6 @@ class jtag(object):
                 #     * Those (if any) are the ones injected on.
                 #   * Assume that all ways are unlocked and valid
 
-
-                # TODO: Deal with single instruction running multiple times
-                # Run until the load instruction first executes
-                self.break_dut_after(addr, break_number) # runs from the beginning...
 
             # Needs to have processor halted at correct point here.
             previous_injection_time = injection.time

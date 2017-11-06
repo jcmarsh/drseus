@@ -216,17 +216,23 @@ class sqlite_database(object):
         conn.close()
 
     # Return the number of breakpoints that must be skipped to reach the first execution of the
-    #   instruction (address) after a given cycle. The load / store address is used to 
-    #   deal with commands that access multiple memory locations.
-    def SkipCount(self, cycle, address, l_s_addr):
-        print("Get the Skip Count for ", address, " after cycle ", cycle, " (ls_addr: ", l_s_addr, ")")
+    #   instruction (address) after a given cycle. Check total cycles to spot multies
+    def SkipCount(self, start_cycle, end_cycle, address):
+        print("Get the Skip Count for ", address, " up to cycle ", end_cycle)
         conn = connect(self.database)
         c = conn.cursor()
 
-        c.execute("SELECT * FROM ls_inst WHERE cycles_total < {} AND address = {} AND l_s_addr = {}".format(cycle, address, l_s_addr))
+        c.execute("SELECT * FROM ls_inst WHERE cycles_total > {} AND cycles_total < {} AND address = {}".format(start_cycle, end_cycle, address))
         retval = c.fetchall()
 
-        return len(retval)
+        cycles_list = []
+        for line in retval:
+            if line[0] in cycles_list:
+                pass
+            else:
+                cycles_list.append(line[0])
+
+        return len(cycles_list)
 
     # Given a cycle count, find the following load instructions.
     # addr, break_number = sql_db.get_next_load(injection.time)
@@ -273,7 +279,7 @@ class sqlite_database(object):
                 print("*****************************")
                 print("* Load from target cache!   *")
                 print("*****************************")
-                targets.append(possible[2])
+                targets.append([possible[0], possible[2]])
 
         return targets
 
