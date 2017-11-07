@@ -277,24 +277,48 @@ class jtag(object):
                         print("********************************")
                     self.single_dut_break(str(target[1]))
 
+                    # TODO: The target register should really be part of the database
+                    # Check program counter
+                    program_counter = self.command(command = 'reg pc', error_message = 'Oh boffins!')
+                    print("PC: ", program_counter)
+                    program_counter = (program_counter.split())[2]
+                    print("PC: ", program_counter)
+                    # read instruction
+                    target_reg = self.command(command = 'arm disassemble %s' % (program_counter), error_message = 'You have done it now.')
+                    print("Target Reg: ", target_reg)
+                    instruction = (target_reg.split())[2]
+                    if not "LD" in instruction:
+                        print("YOU SHOULD ONLY BE LOOKING AT LOADS!")
                     # find target
-                    # inject fault
-                    # set next breakpoint
-                    # continue
+                    target_reg = (target_reg.split())[3][:3]
+                    if target_reg == 'r13':
+                        target_reg = 'sp'
+                    if target_reg == 'r14':
+                        target_reg = 'lr'
+                    if target_reg == 'r15':
+                        target_reg = 'pc'
+                    print("Target Reg: ", target_reg)
 
+                    # let data load (step):
+                    self.command(command = 'step', error_message = 'Failed to step')
+                    # inject fault <- injection.injected_value = hex(int(injection.gold_value, base=16) ^ (1 << injection.bit))
+                    if inject_value == None:
+                        # read value from target (set injection.gold_value?)
+                        value = self.command(command = 'reg %s' % target_reg, error_message = 'Could not read reg')
+                        print("inject value: ", value)
+                        value = (value.split())[2]
+                        inject_value = int(value, 16)
+                        print("inject_value: ", inject_value)
+                        # flip bit and save new value in inject_value
+                    # inject "inject value" in target register
 
-                print("Going to inject on this guy %s on the %dth time." % (candidates[way_impacted]))
+                    # read to confirm
 
-                # Check if any injections need to be performed
-                # Summary: Pick the impacted cache set, find the address corresponding to resident values, pick one address to use injections.
-                # For Round Robin policy:
-                #   * W is the number of ways (4-way, 8-way)
-                #   * Find the previous W unique stores / loads from that set
-                #     This tells you what was in the cache. Unique as in target address (avoids bias with a single popular address)
-                #   * Pick one of them at random to be the impacted way (if less than W, each valid way still has only an 1/W chance of being hit)
-                #   * Find all following cached loads from that address up until the next store to that address or uncached load from that address
-                #     * Those (if any) are the ones injected on.
-                #   * Assume that all ways are unlocked and valid
+                    # injection.save()? injection.success, set_register_value... makes sense to write new functions or modify?
+
+                    prev_cycle = target[0]
+
+                # All faults should have now been injected
 
 
             # Needs to have processor halted at correct point here.

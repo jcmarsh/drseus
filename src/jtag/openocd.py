@@ -108,6 +108,7 @@ class openocd(jtag):
         return super().command(command, expected_output, error_message,
                                log_event, '\n', True)
 
+    # TODO: Consider changing these to use the command function in super (__init__.py)
     def start_dut(self):
         self.telnet.write(bytes('halt\n', encoding='utf-8'))
         self.telnet.write(bytes('resume 0x00100000\n', encoding='utf-8'))
