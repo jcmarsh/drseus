@@ -304,22 +304,31 @@ class jtag(object):
                     # inject fault <- injection.injected_value = hex(int(injection.gold_value, base=16) ^ (1 << injection.bit))
                     if inject_value == None:
                         # read value from target (set injection.gold_value?)
-                        value = self.command(command = 'reg %s' % target_reg, error_message = 'Could not read reg')
+                        value = self.command(command = 'reg %s' % (target_reg), error_message = 'Could not read reg')
                         print("inject value: ", value)
                         value = (value.split())[2]
                         inject_value = int(value, 16)
-                        print("inject_value: ", inject_value)
+                        print("inject_value: ", hex(inject_value))
                         # flip bit and save new value in inject_value
+                        injection.gold_value = inject_value
+                        print("Injection bit:", injection.bit)
+                        inject_value = inject_value ^ (1 << (injection.bit % 32)) # mod 32 for size of registers (injection.bit is for the whole cache line)
+                        injection.injected_value = inject_value # TODO: Could clean up
+                        print("inject_value: ", hex(inject_value))
                     # inject "inject value" in target register
+                    self.command(command = 'reg %s 0x%s' % (target_reg, hex(inject_value)), #error_message = 'Failed to inject fault in register')
+                                 # expected_output = '%s (/32): 0x%s' % (target_reg, hex(inject_value)),
+                                 error_message = 'Failed to inject fault in register%s' % (target_reg))
+                    print("Did that bloody work?")
 
-                    # read to confirm
+                    self.command(command = 'resume', error_message = "Failed to resume")
 
                     # injection.save()? injection.success, set_register_value... makes sense to write new functions or modify?
 
                     prev_cycle = target[0]
 
                 # All faults should have now been injected
-
+                return None, None, False
 
             # Needs to have processor halted at correct point here.
             previous_injection_time = injection.time
