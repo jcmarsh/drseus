@@ -262,9 +262,11 @@ class jtag(object):
                 skip_count = sql_db.SkipCount(0, prev_cycle, injection_targets[0][1]) #, (candidates[way_impacted] << 5) + 16)
                 print("Skip Count! ", skip_count)
 
-                # Skip the first
-                # TODO: This first needs to run until the start tag (but this function restarts)
-                self.break_dut_after(str(injection_targets[0][1]), skip_count) # runs from the beginning, Removes breakpoint.
+                # Get the DUT to the correct location
+                start_addr = hex(sql_db.get_start_addr())
+                print("Run until start address: ", start_addr)
+                self.break_dut(start_addr) # Restart, run until start tag
+                self.break_dut_after(str(injection_targets[0][1]), skip_count) # runs current, Removes breakpoint.
 
                 inject_value = None
                 for target in injection_targets:
@@ -311,7 +313,7 @@ class jtag(object):
                         print("inject_value: ", hex(inject_value))
                         # flip bit and save new value in inject_value
                         injection.gold_value = inject_value
-                        print("Injection bit:", injection.bit)
+                        print("Injection bit: ", injection.bit, " / ", injection.bit % 32)
                         inject_value = inject_value ^ (1 << (injection.bit % 32)) # mod 32 for size of registers (injection.bit is for the whole cache line)
                         injection.injected_value = inject_value # TODO: Could clean up
                         print("inject_value: ", hex(inject_value))

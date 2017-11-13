@@ -113,19 +113,19 @@ class openocd(jtag):
         self.telnet.write(bytes('halt\n', encoding='utf-8'))
         self.telnet.write(bytes('resume 0x00100000\n', encoding='utf-8'))
 
+    # Restarts the program from the beginning, halts as specified address
     def break_dut(self, address):
-        # TODO: consider using break_dut_after
         self.telnet.write(bytes('halt\n', encoding='utf-8'))
         self.telnet.write(bytes('bp ' + address + ' 1 hw\n', encoding='utf-8'))
         self.telnet.write(bytes('resume 0x00100000\n', encoding='utf-8'))
         sleep(.1)
         self.telnet.write(bytes('rbp ' + address + '\n', encoding='utf-8'))
 
+    # Program must be stopped already, runs until breakpoint is hit number of times
     def break_dut_after(self, address, times):
         breaks = times
-        self.telnet.write(bytes('halt\n', encoding='utf-8'))
         self.telnet.write(bytes('bp ' + address + ' 1 hw\n', encoding='utf-8'))
-        self.telnet.write(bytes('resume 0x00100000\n', encoding='utf-8')) # TODO: just resume?
+        self.telnet.write(bytes('resume\n', encoding='utf-8'))
         sleep(.1)
         breaks = breaks - 1
         while (breaks > 0):
