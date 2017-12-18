@@ -201,7 +201,6 @@ class jtag(object):
         print("********************************************************************************")
 
         if self.db.campaign.command:
-            # TODO: Need to call self.dut.break_dut so skip first bits?
             # TODO: Needs to deal with timing better, at least for cache.
             print("**** It's an injection start ****")
             self.start_dut()
