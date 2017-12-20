@@ -21,8 +21,11 @@ def record_tags(sqlite_database):
     with open("../etc/tags.txt") as tags:
         lines = tags.readlines()
 # '{} {}'.format('one', 'two')
-        start_addr = int(lines[0].strip(), 16)
-        end_addr = int(lines[1].strip(), 16)
+        try:
+            start_addr = int(lines[0].strip(), 16)
+            end_addr = int(lines[1].strip(), 16)
+        except IndexError:
+            print("\n****************\n* MISSING ASSEMBLY START OR END TAG\n****************\n")
         sqlite_database.log_tags(start_addr, end_addr)
 
 def assembly_golden_run(sqlite_database, debugger):
