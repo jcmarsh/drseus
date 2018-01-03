@@ -118,7 +118,7 @@ class openocd(jtag):
         self.telnet.write(bytes('halt\n', encoding='utf-8'))
         self.telnet.write(bytes('bp ' + address + ' 1 hw\n', encoding='utf-8'))
         self.telnet.write(bytes('resume 0x00100000\n', encoding='utf-8'))
-        sleep(.1)
+        self.telnet.read_until(b'target halted in ARM state due to breakpoint, current mode: System')
         self.telnet.write(bytes('rbp ' + address + '\n', encoding='utf-8'))
 
     # Program must be stopped already, runs until breakpoint is hit number of times
@@ -126,12 +126,12 @@ class openocd(jtag):
         breaks = times
         self.telnet.write(bytes('bp ' + address + ' 1 hw\n', encoding='utf-8'))
         self.telnet.write(bytes('resume\n', encoding='utf-8'))
-        sleep(.1)
+        self.telnet.read_until(b'target halted in ARM state due to breakpoint, current mode: System')
         breaks = breaks - 1
         while (breaks > 0):
             self.telnet.write(bytes('step\n', encoding='utf-8'))
             self.telnet.write(bytes('resume\n', encoding='utf-8'))
-            sleep(.1)
+            self.telnet.read_until(b'target halted in ARM state due to breakpoint, current mode: System')
             breaks = breaks -1
         self.telnet.write(bytes('rbp ' + address + '\n', encoding='utf-8'))
 
@@ -140,22 +140,33 @@ class openocd(jtag):
         self.telnet.write(bytes('bp ' + address + ' 1 hw\n', encoding='utf-8'))
         self.telnet.write(bytes('step\n', encoding='utf-8'))
         self.telnet.write(bytes('resume\n', encoding='utf-8'))
-        sleep(.1)
+        self.telnet.read_until(b'target halted in ARM state due to breakpoint, current mode: System')
         self.telnet.write(bytes('rbp ' + address + '\n', encoding='utf-8'))
 
     def check_cycles(self):
         self.telnet.write(bytes('arm mrc 15 0 9 13 0\n', encoding='utf-8'))
-        # To comment out this read; must call read_until()
-        print("Returned?\n", self.telnet.read_until(b"arm mrc 15 0 9 13 0\r\n"))
-        retval = self.telnet.read_some()
-        print("Returned?: ", retval)
-        if retval is '':
-            print("Trying check_cycles again (null)")
+        # If you comment out this print, you must keep the call to read_until()
+        print("Returned 0?\n", self.telnet.read_until(b"arm mrc 15 0 9 13 0\r\n"))
+        while True:
             retval = self.telnet.read_some()
-        retval = retval.decode('ascii')
-        if '\r\n' in retval: # Sometimes the return doesn't include endline chars "\r\n\r>"
-            retval = retval[:-5]
-        retval = int(retval)
+            retval = retval.decode('ascii')
+
+            print("Returned 1?: ", retval)
+            if retval is '':
+                print("Trying check_cycles again (null)")
+                retval = self.telnet.read_some()
+            elif 'Timeout' in retval:
+                print("Taking too long. Try again")
+                retval = self.telnet.read_some()
+            else:
+                if '\r\n' in retval: # Sometimes the return doesn't include endline chars "\r\n\r>"
+                    retval = retval[:-5]
+                try:
+                    retval = int(retval)
+                    break
+                except ValueError:
+                    print("Well, that failed.")
+
         #print("Parse problems?", retval)
         return retval
         # print("Returned?\n", self.telnet.read_some())
