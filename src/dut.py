@@ -626,11 +626,12 @@ class dut(object):
         errors = 0
         hanging = False
         returned = False
-        print("read_until: " + str(self.options.timeout+5))
+        print("read_until: " + str(self.options.timeout+5) + " or: " + self.prompt)
         while True:
+            # TODO: Why is this freezing up after ~5K - 10K characters are sent by the DUT?
             try:
                 with timeout(self.options.timeout+5):
-                    char = self.serial.read().decode('utf-8', 'replace')
+                    char = self.serial.read().decode('utf-8', 'replace').replace('\x00', 'X')
             except SerialException:
                 errors += 1
                 self.db.log_event(
@@ -716,7 +717,11 @@ class dut(object):
                 break
             if not boot and buff and buff.endswith('\n'):
                 if self.db.result is None:
-                    self.db.campaign.save()
+                    try:
+                        self.db.campaign.save()
+                    except ValueError:
+                        print("Campaign.save Failed.")
+                        # self.db.campaign.save()
                 else:
                     self.db.result.save()
         self.stop_timer()
