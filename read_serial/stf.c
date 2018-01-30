@@ -95,7 +95,6 @@ int main(int argc, char ** argv) {
       // Either I'm too clever or I'm too tired: I think this code elegantly handles the corner case.
       for (index = 0; index < BUFF_SIZE; index++) {
         if (buff[index] == search_string[found_index]) {
-          printf("\nFound a %c\n", search_string[found_index]);
           found_index++;
           if (found_index == strlen(search_string)) {
             done = true;

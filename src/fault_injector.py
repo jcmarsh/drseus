@@ -98,7 +98,6 @@ class fault_injector(object):
                         start_cycle = self.debugger.check_cycles()
                         print("Breaking on", self.options.cache_sqlite.get_end_addr())
                         self.debugger.break_dut(hex(self.options.cache_sqlite.get_end_addr()))
-                        sleep(1)
                         end_cycle = self.debugger.check_cycles()
                         print("Raw cycles: ", start_cycle, end_cycle)
                         # Cortex-A9 PMCCNTR has two modes, use this to convert if counting 1 per 64 cycles (instead of 1 to 1)
@@ -106,7 +105,7 @@ class fault_injector(object):
                         # end_cycle = end_cycle * 64 + 64 # ending will be overestimated
                         # print("Start and end convert: ", start_cycle, end_cycle)
                         print("Diff: ", end_cycle - start_cycle)
-                        self.debugger.continue_dut()
+                        self.debugger.start_dut()
                         self.options.cache_sqlite.log_start_end(start_cycle, end_cycle)
                     else:
                         self.debugger.dut.write('{}\n'.format(
