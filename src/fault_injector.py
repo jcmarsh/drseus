@@ -175,7 +175,7 @@ class fault_injector(object):
             print("\tDone Resetting DUT")
             print("\tTiming application")
             time_application()
-            print("\tDone timing appliaction")
+            print("\tDone timing application")
         if not self.db.campaign.command:
             self.db.campaign.execution_time = self.options.delay
             sleep(self.db.campaign.execution_time)
