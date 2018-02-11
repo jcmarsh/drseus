@@ -149,9 +149,10 @@ class openocd(jtag):
         print("Returned 0?\n", self.telnet.read_until(b"arm mrc 15 0 9 13 0\r\n"))
         while True:
             retval = self.telnet.read_some()
+            print("Returned 1?: ", retval)
             retval = retval.decode('ascii')
 
-            print("Returned 1?: ", retval)
+
             if retval is '':
                 print("Trying check_cycles again (null)")
                 retval = self.telnet.read_some()
@@ -159,13 +160,11 @@ class openocd(jtag):
                 print("Taking too long. Try again")
                 retval = self.telnet.read_some()
             else:
-                if '\r\n' in retval: # Sometimes the return doesn't include endline chars "\r\n\r>"
-                    retval = retval[:-5]
                 try:
-                    retval = int(retval)
+                    retval = int(retval.strip().strip('>').strip('\r').strip('\n').strip('\r'))
                     break
                 except ValueError:
-                    print("Well, that failed.")
+                    print("Parsing cycles failed\n")
 
         #print("Parse problems?", retval)
         return retval
