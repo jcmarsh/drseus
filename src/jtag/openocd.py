@@ -292,3 +292,8 @@ class openocd(jtag):
         else:
             self.command('reg {} {}'.format(register_name, value),
                          error_message='Error setting register value')
+
+    def set_cycle_granularity(self):
+        self.telnet.write(bytes('arm mcr 15 0 9 12 0 1091121153\n', encoding='utf-8'))
+        response = self.telnet.read_until(b"arm mcr 15 0 9 12 0 1091121153\r\n")
+        print('Set single cycle counter granularity: %s' % (response))

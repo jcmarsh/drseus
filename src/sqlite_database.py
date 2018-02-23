@@ -51,6 +51,9 @@ def assembly_golden_run(sqlite_database, debugger):
     print("Start and end tag addresses", start_addr, hex(sqlite_database.get_end_addr()))
     debugger.break_dut(start_addr)
 
+    # Set cycle counter granularity to 1x (default is 64 cycles per tick)
+    debugger.set_cycle_granularity()
+
     # TODO: remove sleep?
     sleep(1)
 
