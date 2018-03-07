@@ -102,7 +102,8 @@ class fault_injector(object):
                         # Cortex-A9 PMCCNTR has two modes, use this to convert if counting 1 per 64 cycles (instead of 1 to 1)
                         # Start cycle is read before changing granularities
                         # start_cycle = start_cycle * 64 # beginning will underestimated
-                        end_cycle = end_cycle * 64 + 64 # ending will be overestimated
+                        # end_cycle = end_cycle * 64 + 64 # ending will be overestimated
+                        end_cycle = start_cycle + ((end_cycle - start_cycle) * 64) # when run, cycle granularity will be x64 for the first reading, 1x after that.
                         print("Start and end convert: ", start_cycle, end_cycle)
                         print("Diff: ", end_cycle - start_cycle)
                         self.debugger.start_dut()
