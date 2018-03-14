@@ -374,6 +374,7 @@ class sqlite_database(object):
         conn.close()
         return retval
 
+    # Returns the lowest cycle count from the load / store database
     def get_start_cycle(self):
         conn = connect(self.database)
         c = conn.cursor()
@@ -397,6 +398,7 @@ class sqlite_database(object):
         conn.close()
         return retval
 
+    # Returns the highest cycle count from the load / store database
     def get_end_cycle(self):
         conn = connect(self.database)
         c = conn.cursor()

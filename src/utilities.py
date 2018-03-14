@@ -275,7 +275,7 @@ def inject_campaign(options):
     print("In inject_campaign")
     cache_sqlite_path = get_database_path(options)
     database = sqlite_database(options, cache_sqlite_path)
-    print_sqlite_database(database)
+    # print_sqlite_database(database)
 
     def perform_injections(iteration_counter, switch):
         drseus = fault_injector(options, switch)

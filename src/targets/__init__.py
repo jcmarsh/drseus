@@ -230,15 +230,14 @@ def choose_injection(targets, selected_target_indices):
             else:
                 raise Exception('invalid selected target indices')
     if 'target_index' in injection:
-        injection['target_name'] = '{}[{}]'.format(injection['target'],
-                                                   injection['target_index'])
+        injection['target_name'] = '{}[{}]'.format(injection['target'], injection['target_index'])
     else:
         injection['target_name'] = injection['target']
     register_list = []
     total_bits = 0
-    print("Registers: ")
+    # print("Registers: ")
     for register in target['registers']:
-        print("\tregister:", register, " - bits:", target['registers'][register]['total_bits'])
+        # print("\tregister:", register, " - bits:", target['registers'][register]['total_bits'])
         bits = target['registers'][register]['total_bits']
         register_list.append((register, bits))
         total_bits += bits
