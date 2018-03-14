@@ -323,9 +323,10 @@ class fault_injector(object):
                 if sleep_time > 0:
                     sleep(sleep_time)
 
-        def perform_injections():
+        def perform_injections(reset_next_run):
             print("Using database: %s" % (get_database_path(self.options)))
             sql_db = sqlite_database(self.options, get_database_path(self.options))
+            # TODO: Start cycle isn't used here?
             print("Start cycle: %d" % (sql_db.get_start_cycle()))
             if timer is not None:
                 start = perf_counter()
@@ -343,14 +344,15 @@ class fault_injector(object):
                 self.db.result.num_injections = self.options.injections
                 if not self.db.campaign.simics:
                     if self.options.command == 'inject':
-                        try:
-                            # Reset the DUT
-                            self.debugger.reset_dut()
-                        except DrSEUsError as error:
-                            self.db.result.outcome_category = 'Debugger error'
-                            self.db.result.outcome = str(error)
-                            self.db.log_result()
-                            continue
+                        if reset_next_run:
+                            try:
+                                # Reset the DUT. reset_dut calls reboot.sh
+                                self.debugger.reset_dut()
+                            except DrSEUsError as error:
+                                self.db.result.outcome_category = 'Debugger error'
+                                self.db.result.outcome = str(error)
+                                self.db.log_result()
+                                continue
                     if self.db.campaign.aux:
                         self.db.log_event(
                             'Information', 'AUX', 'Command',
@@ -367,7 +369,7 @@ class fault_injector(object):
                 log_thread = Thread(target=background_log)
                 try:
                     # Run the program while injected some number of faults
-                    (self.db.result.num_register_diffs, self.db.result.num_memory_diffs, persistent_faults) = self.debugger.inject_faults(sql_db)
+                    (self.db.result.num_register_diffs, self.db.result.num_memory_diffs, persistent_faults, reset_next_run) = self.debugger.inject_faults(sql_db)
                     if self.options.log_delay is not None:
                         log_thread.start()
                 except DrSEUsError as error:
@@ -431,7 +433,7 @@ class fault_injector(object):
             # Executes multple iterations of the program, injecting one or more fault into each
             # perform_injections() sets up all of the iterations of the program;
             #   Injections are done in jtag/__init__.py
-            perform_injections()
+            perform_injections(True)
         except KeyboardInterrupt:
             self.db.result.outcome_category = 'Incomplete'
             self.db.result.outcome = 'Interrupted'

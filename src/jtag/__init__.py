@@ -171,11 +171,15 @@ class jtag(object):
                 candidates.append(address)
         return candidates
 
+    # Returns: num_register_diffs, num_memory_diffs, persistent_faults, reset_next?
     def inject_faults(self, sql_db):
         # Select injection times
         injection_times = []
         for i in range(self.options.injections):
-            injection_times.append(int(uniform(sql_db.get_start_cycle(), sql_db.get_end_cycle())))
+            # Pulls first and last cycle counts from the load / store database
+            new_inject_time = int(uniform(sql_db.get_start_cycle(), sql_db.get_end_cycle()))
+            # print("Injection time,", new_inject_time, " : between ", sql_db.get_start_cycle(), sql_db.get_end_cycle())
+            injection_times.append(new_inject_time)
 
         # Select targets and injection object
         injections = []
@@ -220,8 +224,11 @@ class jtag(object):
                 ways = 8 # TODO: Hardcoding for L2 cache
 
                 # While still finding them, do this...
-                # Test code for now...
-                candidates = self.PrevAccess(sql_db, 30500, 1531, 8)
+                # TEST CODE
+                # FIB_SHORT: candidates = self.PrevAccess(sql_db, 1000, 1536, ways)
+                # LZO:
+                candidates = self.PrevAccess(sql_db, 51000, 1056, ways) # No effect
+
                 # candidates = self.PrevAccess(sql_db, injection.time, cache_set, ways)
                 # Candidates are the addresses of the data in the cache shifted to remove the byte offset
                 #   Since there are 32 bytes in each cache line, that means >> 5
@@ -231,27 +238,36 @@ class jtag(object):
 
                 # Parse from injection.field: 84   data_2   cacheline_1455
                 # TODO: limits to a 1 digit number of ways
-                #way_impacted = int(injection.field[-1:])
-                way_impacted = 0
+                way_impacted = 0 # TEST CODE
+                # way_impacted = int(injection.field[-1:])
 
                 if way_impacted >= len(candidates):
                     print("No fault injected: cache line was not valid.")
                     # TODO: How to return from this?
-                    return None, None, False
+                    return None, None, False, False
 
                 # target picked, so now need all following accesses (until a store or slow load)
                 # For out example (way 0 of cache line 1531 at cycle 30500, address 1097584 for fib_short):
                 #   SELECT * FROM ls_inst WHERE L2_set = 1531 AND l_s_addr = 1097584 AND cycles_total > 30500;
                 #   30586|14|1055908|0|1097584|LDM|1531
                 #   31133|13|1055900|1|1097584|STM|1531 <- don't return... signals end.
+
+                # LZO example:
+                # sqlite> SELECT * FROM ls_inst WHERE L2_set = 1056 AND l_s_addr = 1147908;
+                # 58607|14|1061604|1|1147908|STR|1056
+                # 357818|14|1050984|0|1147908|LDR|1056
+                # 388511|14|1053628|0|1147908|LDR|1056
+
                 #injection_targets = sql_db.NextLdrStr(cycle, cache_set, (candidates[way_impacted] << 5) + injection.bit)
-                injection_targets = sql_db.NextLdrStr(30500, 1531, (candidates[way_impacted] << 5) + 16)
+                # FIB_SHORT: injection_targets = sql_db.NextLdrStr(1000, 1536, (candidates[way_impacted] << 5) + 16) # TEST CODE
+                # LZO:
+                injection_targets = sql_db.NextLdrStr(51000, 1056, (candidates[way_impacted] << 5) + 16) # TEST CODE
                 print("Injection targets: ", injection_targets)
 
                 if (len(injection_targets) == 0):
                     print("No Fault injected: value in cache never read.")
                     # TODO: How to return from this?
-                    return None, None, False
+                    return None, None, False, False
 
                 # Need advance the DUT to the first injection
                 # On first injection, figure out the corrupted bit
@@ -329,7 +345,7 @@ class jtag(object):
                     prev_cycle = target[0]
 
                 # All faults should have now been injected
-                return None, None, False
+                return None, None, False, True
 
             # Needs to have processor halted at correct point here.
             previous_injection_time = injection.time
@@ -375,7 +391,7 @@ class jtag(object):
                         'Error', 'Debugger', 'Injection failed')
                 self.set_mode(injection.processor_mode)
             self.continue_dut()
-        return None, None, False
+        return None, None, False, True
 
     def command(self, command, expected_output, error_message,
                 log_event, line_ending, echo):
