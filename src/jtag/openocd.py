@@ -296,4 +296,4 @@ class openocd(jtag):
     def set_cycle_granularity(self):
         self.telnet.write(bytes('arm mcr 15 0 9 12 0 1091121153\n', encoding='utf-8'))
         response = self.telnet.read_until(b"arm mcr 15 0 9 12 0 1091121153\r\n")
-        print('Set single cycle counter granularity: %s' % (response))
+        print('Set single cycle counter granularity: %s' % (response)) # TODO: Not sure if this print makes sense...

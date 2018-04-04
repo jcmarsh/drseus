@@ -176,11 +176,11 @@ class sqlite_database(object):
         self.cache_set_col     = "L2_set"
         self.cache_set_type    = "INTEGER"
         self.L2CC_look_t_col   = "L2CC_look_t"
-        self.L2CC_look_T_type  = "INTEGER"
-        self.L2CC_hit_t_col    = "L2CC_hit_t"
-        self.L2CC_hit_t_type   = "INTEGER"
+        self.L2CC_look_t_type  = "INTEGER"
         self.L2CC_look_d_col   = "L2CC_look_d"
         self.L2CC_look_d_type  = "INTEGER"
+        self.L2CC_hit_t_col    = "L2CC_hit_t"
+        self.L2CC_hit_t_type   = "INTEGER"
         self.L2CC_hit_d_col    = "L2CC_hit_d"
         self.L2CC_hit_d_type   = "INTEGER"
 
@@ -216,9 +216,9 @@ class sqlite_database(object):
                     c5=self.ldstr_addr_col, t5=self.ldstr_addr_type,\
                     c6=self.inst_name_col, t6=self.inst_name_type,\
                     c7=self.cache_set_col, t7=self.cache_set_type,\
-                    c8=self.L2CC_look_t_col, t8=self.L2CC_look_T_type,
-                    c9=self.L2CC_hit_t_col, t9=self.L2CC_hit_t_type,
-                    c10=self.L2CC_look_d_col, t10=self.L2CC_look_d_type,
+                    c8=self.L2CC_look_t_col, t8=self.L2CC_look_t_type,\
+                    c9=self.L2CC_look_d_col, t9=self.L2CC_look_d_type,\
+                    c10=self.L2CC_hit_t_col, t10=self.L2CC_hit_t_type,\
                     c11=self.L2CC_hit_d_col,  t11=self.L2CC_hit_d_type))
 
         c.execute('CREATE TABLE {tn} ({c1} {t1} PRIMARY KEY, {c2} {t2}, {c3} {t3}, {c4} {t4}, {c5} {t5})'\
