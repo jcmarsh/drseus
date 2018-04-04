@@ -161,9 +161,9 @@ class sqlite_database(object):
 
         # Fields for the load / store table
         self.ldstr_inst_tbl    = "ls_inst"
-        self.cycles_total_col  = "cycles_total"
+        self.cycles_total_col  = "cycles_t"
         self.cycles_total_type = "INTEGER"
-        self.cycles_diff_col   = "cycles_diff"
+        self.cycles_diff_col   = "cycles_d"
         self.cycles_diff_type  = "INTEGER"
         self.address_col       = "address"
         self.address_type      = "INTEGER"
@@ -175,6 +175,14 @@ class sqlite_database(object):
         self.inst_name_type    = "TEXT"
         self.cache_set_col     = "L2_set"
         self.cache_set_type    = "INTEGER"
+        self.L2CC_look_t_col   = "L2CC_look_t"
+        self.L2CC_look_T_type  = "INTEGER"
+        self.L2CC_hit_t_col    = "L2CC_hit_t"
+        self.L2CC_hit_t_type   = "INTEGER"
+        self.L2CC_look_d_col   = "L2CC_look_d"
+        self.L2CC_look_d_type  = "INTEGER"
+        self.L2CC_hit_d_col    = "L2CC_hit_d"
+        self.L2CC_hit_d_type   = "INTEGER"
 
         # Execution information for injection (start and stop cycle counts)
         self.inject_tbl        = "injection_info"
@@ -199,7 +207,7 @@ class sqlite_database(object):
         c = conn.cursor()
 
         # Add to database
-        c.execute('CREATE TABLE {tn} ({c1} {t1}, {c2} {t2}, {c3} {t3}, {c4} {t4}, {c5} {t5}, {c6} {t6}, {c7} {t7})'\
+        c.execute('CREATE TABLE {tn} ({c1} {t1}, {c2} {t2}, {c3} {t3}, {c4} {t4}, {c5} {t5}, {c6} {t6}, {c7} {t7}, {c8} {t8}, {c9} {t9}, {c10} {t10}, {c11} {t11})'\
             .format(tn=self.ldstr_inst_tbl,\
                     c1=self.cycles_total_col, t1=self.cycles_total_type,\
                     c2=self.cycles_diff_col, t2=self.cycles_diff_type,\
@@ -207,7 +215,11 @@ class sqlite_database(object):
                     c4=self.ldstr_col, t4=self.ldstr_type,\
                     c5=self.ldstr_addr_col, t5=self.ldstr_addr_type,\
                     c6=self.inst_name_col, t6=self.inst_name_type,\
-                    c7=self.cache_set_col, t7=self.cache_set_type))
+                    c7=self.cache_set_col, t7=self.cache_set_type,\
+                    c8=self.L2CC_look_t_col, t8=self.L2CC_look_T_type,
+                    c9=self.L2CC_hit_t_col, t9=self.L2CC_hit_t_type,
+                    c10=self.L2CC_look_d_col, t10=self.L2CC_look_d_type,
+                    c11=self.L2CC_hit_d_col,  t11=self.L2CC_hit_d_type))
 
         c.execute('CREATE TABLE {tn} ({c1} {t1} PRIMARY KEY, {c2} {t2}, {c3} {t3}, {c4} {t4}, {c5} {t5})'\
             .format(tn=self.inject_tbl,\
@@ -274,7 +286,7 @@ class sqlite_database(object):
             if (possible[3] == 1):
                 # It's a store. Return
                 return targets
-            elif (possible[1] > 30):
+            elif (possible[1] > 30): # TODO: Hard coded cycle time here
                 # it's a load, but from backing memory
                 print("*****************************")
                 print("* Load from backing memory! *")
@@ -343,6 +355,7 @@ class sqlite_database(object):
         return found_cycles, retval[0][0] >> 5 # Shift to remove byte offset from address.
 
 
+    # Add the start and end addresses into the injection info table
     def log_tags(self, start_addr, end_addr):
         print("Adding start and end tag addresses.", start_addr, end_addr)
         conn = connect(self.database)
@@ -353,6 +366,7 @@ class sqlite_database(object):
         conn.commit()
         conn.close()
 
+    # Update the injection info table with the start and end cycles for the tags
     def log_start_end(self, start_cycle, end_cycle):
         print("Adding start and end cycle counts.", start_cycle, end_cycle)
         conn = connect(self.database)
@@ -363,6 +377,7 @@ class sqlite_database(object):
         conn.commit()
         conn.close()
 
+    # Return the start address from the single row of the injection info table
     def get_start_addr(self):
         conn = connect(self.database)
         c = conn.cursor()
@@ -387,6 +402,7 @@ class sqlite_database(object):
         conn.close()
         return retval
 
+    # Return the end address from the single row of the injection info table
     def get_end_addr(self):
         conn = connect(self.database)
         c = conn.cursor()
