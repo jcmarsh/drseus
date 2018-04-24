@@ -56,6 +56,11 @@ int set_interface_attribs(int fd, int speed, int parity) {
 }
 
 int main(int argc, char ** argv) {
+  int serial_fd;
+  int read_cnt = 0, write_cnt = 0;
+  int index = 0, found_index = 0;
+  char buff[BUFF_SIZE];
+  bool done = false;
 
   if (argc < 3) {
     fprintf(stderr, "Usage: serial_to_file <serial_port> <stop_string>\n");
@@ -65,21 +70,13 @@ int main(int argc, char ** argv) {
   char *portname = argv[1];
   char *search_string = argv[2];
 
-  int serial_fd = open(portname, O_RDONLY | O_NOCTTY | O_SYNC);
+  serial_fd = open(portname, O_RDONLY | O_NOCTTY | O_SYNC);
   if (serial_fd < 0) {
     fprintf(stderr, "Failed to open serial port\n");
     return -1;
   }
 
-  set_interface_attribs(serial_fd, B460800, 0);  // set speed to 115,200 bps, 8n1 (no parity)
-  //  set_blocking (fd, 0);                // set no blocking
-
-  int read_cnt = 0;
-  int write_cnt = 0;
-  char buff[BUFF_SIZE];
-  int index = 0;
-  int found_index = 0;
-  bool done = false;
+  set_interface_attribs(serial_fd, B460800, 0);  // set speed to 460,800 bps, 8n1 (no parity)
 
   while (!done) {
     read_cnt = read(serial_fd, buff, sizeof(buff));
