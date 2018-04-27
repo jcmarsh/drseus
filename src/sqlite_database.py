@@ -33,51 +33,46 @@ def assembly_golden_run(sqlite_database, debugger):
 
     cprint("\tGetting username and ip...", 'yellow')
 
-    #username = subprocess.check_output("cat ../login_info | awk -F = '/user/{ print $2 }'", shell=True)
-    #username = str(username)[2:-3]
-    #cprint("\t\tusername: " + username, 'yellow')
+    username = subprocess.check_output("cat ../login_info | awk -F = '/user/{ print $2 }'", shell=True)
+    username = str(username)[2:-3]
+    cprint("\t\tusername: " + username, 'yellow')
 
-    #ip = subprocess.check_output("cat ../login_info" + " | awk -F = '/ip/{ print $2 }'", shell=True)
-    #ip = str(ip)[2:-3]
-    #cprint("\t\tip: " + ip, 'yellow')
+    ip = subprocess.check_output("cat ../login_info" + " | awk -F = '/ip/{ print $2 }'", shell=True)
+    ip = str(ip)[2:-3]
+    cprint("\t\tip: " + ip, 'yellow')
 
     localpath = sqlite_database.database
-    #p = subprocess.Popen("scp " + localpath + " " + username + "@" + ip + ":~/jtag_eval/openOCD_cfg/mnt", shell=True)
-    #p.communicate()
-    #p.kill()
 
     # Start zybo but halt at the drseus_sync_tag label address
     start_addr = hex(sqlite_database.get_start_addr())
     print("Start and end tag addresses", start_addr, hex(sqlite_database.get_end_addr()))
     debugger.break_dut(start_addr)
 
-    # Set cycle counter granularity to 1x (default is 64 cycles per tick)
-    # debugger.set_cycle_granularity()
+    # Start OpenOCD on the embedded board
+    print("Start new OpenOCD instance")
+    command = "'sudo pkill openocd; cd ./jtag_eval/openOCD_cfg; touch mnt/output.txt; sudo openocd -f openocd.cfg -l ./mnt/output.txt'"
+    p1 = subprocess.Popen("x-terminal-emulator -e \"ssh " + username + "@" + ip + " " + command + "\"", shell=True)
 
-    # TODO: remove sleep?
-    sleep(1)
+    sleep(5)
 
     # Run on the database
     #print("Running asm_golden_run.py")
-    #command = " 'cd ./jtag_eval/openOCD_cfg/mnt;python ./asm_golden_run.py |& tee asm_output.txt'"
-    #p = subprocess.Popen("x-terminal-emulator -e \"ssh " + username + "@" + ip + command + "\"", shell=True)
     print("Running gdb_l2cc_cont.py")
     command = " '../../binutils-gdb/build/gdb/gdb -q -x ./gdb_l2cc_cont.py ../jtag_eval/xsdb/Attempt2.elf'"
-    #p = subprocess.Popen(command, shell=True)
     p = subprocess.Popen("cd ../scripts; x-terminal-emulator -e " + command, shell=True)
 
     # Run until program is done
     debugger.dut.read_until()
-    # TODO: From here
-    #subprocess.call("ssh " + username + "@" + ip + " 'touch ~/jtag_eval/openOCD_cfg/mnt/done'", shell=True)
+
     p.communicate()
+    p.kill()
 
     # Transfer back updated database
     # TODO: Shouldn't need... but maybe copy from a temp dir?
-    #print("Transfering back database")
-    #p = subprocess.Popen("scp " + username + "@" + ip + ":~/jtag_eval/openOCD_cfg/mnt/database.sqlite " + localpath, shell=True)
-    #p.communicate()
-    #p.kill()
+    print("Transfering back database")
+    p = subprocess.Popen("scp " + username + "@" + ip + ":~/jtag_eval/openOCD_cfg/mnt/database.sqlite " + localpath, shell=True)
+    p.communicate()
+    p.kill()
 
 def print_sqlite_database(sqlite_database):
     conn = connect(sqlite_database.database)
