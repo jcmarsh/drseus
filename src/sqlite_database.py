@@ -55,11 +55,20 @@ def assembly_golden_run(sqlite_database, debugger):
 
     sleep(5)
 
-    # Run on the database
-    #print("Running asm_golden_run.py")
-    print("Running gdb_l2cc_cont.py")
-    command = " '../../binutils-gdb/build/gdb/gdb -q -x ./gdb_l2cc_cont.py ../jtag_eval/xsdb/Attempt2.elf'"
-    p = subprocess.Popen("cd ../scripts; x-terminal-emulator -e " + command, shell=True)
+    golden = 1
+    l2cc_cont = 2
+    script_run = golden
+
+    if script_run == golden:
+        print("Running gdb_golden_run.py")
+        command = " '../../binutils-gdb/build/gdb/gdb -q -x ./gdb_golden_run.py ../jtag_eval/xsdb/Attempt2.elf'"
+        p = subprocess.Popen("cd ../scripts; x-terminal-emulator -e " + command, shell=True)
+    elif script_run == l2cc_cont:
+        print("Running gdb_l2cc_cont.py")
+        command = " '../../binutils-gdb/build/gdb/gdb -q -x ./gdb_l2cc_cont.py ../jtag_eval/xsdb/Attempt2.elf'"
+        p = subprocess.Popen("cd ../scripts; x-terminal-emulator -e " + command, shell=True)
+    else:
+        print("Unrecognized script option")
 
     # Run until program is done
     debugger.dut.read_until()
