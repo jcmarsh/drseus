@@ -43,6 +43,11 @@ def assembly_golden_run(sqlite_database, debugger):
 
     localpath = sqlite_database.database
 
+    # Move database to where the script can find it
+    p = subprocess.Popen("mkdir ../tmp; cp " + localpath + " ../tmp/database.sqlite", shell=True)
+    p.communicate()
+    p.kill()
+
     # Start zybo but halt at the drseus_sync_tag label address
     start_addr = hex(sqlite_database.get_start_addr())
     print("Start and end tag addresses", start_addr, hex(sqlite_database.get_end_addr()))
@@ -77,9 +82,8 @@ def assembly_golden_run(sqlite_database, debugger):
     p.kill()
 
     # Transfer back updated database
-    # TODO: Shouldn't need... but maybe copy from a temp dir?
     print("Transfering back database")
-    p = subprocess.Popen("scp " + username + "@" + ip + ":~/jtag_eval/openOCD_cfg/mnt/database.sqlite " + localpath, shell=True)
+    p = subprocess.Popen("mv ../tmp/database.sqlite " + localpath, shell=True)
     p.communicate()
     p.kill()
 
