@@ -66,7 +66,7 @@ def assembly_golden_run(sqlite_database, debugger):
 
     if script_run == golden:
         print("Running gdb_golden_run.py")
-        command = " '../../binutils-gdb/build/gdb/gdb -q -x ./gdb_golden_run.py ../jtag_eval/xsdb/Attempt2.elf'"
+        command = " '../../binutils-gdb/build/gdb/gdb -q --batch -x ./gdb_golden_run.py ../jtag_eval/xsdb/Attempt2.elf'"
         p = subprocess.Popen("cd ../scripts; x-terminal-emulator -e " + command, shell=True)
     elif script_run == l2cc_cont:
         print("Running gdb_l2cc_cont.py")
