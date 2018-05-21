@@ -198,6 +198,36 @@ class sqlite_database(object):
         self.L2CC_hit_t_type   = "INTEGER"
         self.L2CC_hit_d_col    = "L2CC_hit_d"
         self.L2CC_hit_d_type   = "INTEGER"
+        # PMU counter 1
+        self.PMU_c1_t_col      = "PMU_c1_t"
+        self.PMU_c1_t_type     = "INTEGER"
+        self.PMU_c1_d_col      = "PMU_c1_d"
+        self.PMU_c1_d_type     = "INTEGER"
+        # PMU counter 2
+        self.PMU_c2_t_col      = "PMU_c2_t"
+        self.PMU_c2_t_type     = "INTEGER"
+        self.PMU_c2_d_col      = "PMU_c2_d"
+        self.PMU_c2_d_type     = "INTEGER"
+        # PMU counter 3
+        self.PMU_c3_t_col      = "PMU_c3_t"
+        self.PMU_c3_t_type     = "INTEGER"
+        self.PMU_c3_d_col      = "PMU_c3_d"
+        self.PMU_c3_d_type     = "INTEGER"
+        # PMU counter 4
+        self.PMU_c4_t_col      = "PMU_c4_t"
+        self.PMU_c4_t_type     = "INTEGER"
+        self.PMU_c4_d_col      = "PMU_c4_d"
+        self.PMU_c4_d_type     = "INTEGER"
+        # PMU counter 5
+        self.PMU_c5_t_col      = "PMU_c5_t"
+        self.PMU_c5_t_type     = "INTEGER"
+        self.PMU_c5_d_col      = "PMU_c5_d"
+        self.PMU_c5_d_type     = "INTEGER"
+        # PMU counter 6
+        self.PMU_c6_t_col      = "PMU_c6_t"
+        self.PMU_c6_t_type     = "INTEGER"
+        self.PMU_c6_d_col      = "PMU_c6_d"
+        self.PMU_c6_d_type     = "INTEGER"
 
         # Execution information for injection (start and stop cycle counts)
         self.inject_tbl        = "injection_info"
@@ -222,7 +252,7 @@ class sqlite_database(object):
         c = conn.cursor()
 
         # Add to database
-        c.execute('CREATE TABLE {tn} ({c1} {t1}, {c2} {t2}, {c3} {t3}, {c4} {t4}, {c5} {t5}, {c6} {t6}, {c7} {t7}, {c8} {t8}, {c9} {t9}, {c10} {t10}, {c11} {t11})'\
+        c.execute('CREATE TABLE {tn} ({c1} {t1}, {c2} {t2}, {c3} {t3}, {c4} {t4}, {c5} {t5}, {c6} {t6}, {c7} {t7}, {c8} {t8}, {c9} {t9}, {c10} {t10}, {c11} {t11}, {c12} {t12}, {c13} {t13}, {c14} {t14}, {c15} {t15}, {c16} {t16}, {c17} {t17}, {c18} {t18}, {c19} {t19}, {c10} {t20}, {c21} {t21}, {c22} {t22}, {c23} {t23})'\
             .format(tn=self.ldstr_inst_tbl,\
                     c1=self.cycles_total_col, t1=self.cycles_total_type,\
                     c2=self.cycles_diff_col, t2=self.cycles_diff_type,\
@@ -234,7 +264,19 @@ class sqlite_database(object):
                     c8=self.L2CC_look_t_col, t8=self.L2CC_look_t_type,\
                     c9=self.L2CC_look_d_col, t9=self.L2CC_look_d_type,\
                     c10=self.L2CC_hit_t_col, t10=self.L2CC_hit_t_type,\
-                    c11=self.L2CC_hit_d_col,  t11=self.L2CC_hit_d_type))
+                    c11=self.L2CC_hit_d_col, t11=self.L2CC_hit_d_type,\
+                    c12=self.PMU_c1_t_col, t12=self.PMU_c1_t_type,\
+                    c13=self.PMU_c1_d_col, t13=self.PMU_c1_d_type,\
+                    c14=self.PMU_c2_t_col, t14=self.PMU_c2_t_type,\
+                    c15=self.PMU_c2_d_col, t15=self.PMU_c2_d_type,\
+                    c16=self.PMU_c3_t_col, t16=self.PMU_c3_t_type,\
+                    c17=self.PMU_c3_d_col, t17=self.PMU_c3_d_type,\
+                    c18=self.PMU_c4_t_col, t18=self.PMU_c4_t_type,\
+                    c19=self.PMU_c4_d_col, t19=self.PMU_c4_d_type,\
+                    c10=self.PMU_c5_t_col, t20=self.PMU_c5_t_type,\
+                    c21=self.PMU_c5_d_col, t21=self.PMU_c5_d_type,\
+                    c22=self.PMU_c6_t_col, t22=self.PMU_c6_t_type,\
+                    c23=self.PMU_c6_d_col, t23=self.PMU_c6_d_type))
 
         c.execute('CREATE TABLE {tn} ({c1} {t1} PRIMARY KEY, {c2} {t2}, {c3} {t3}, {c4} {t4}, {c5} {t5})'\
             .format(tn=self.inject_tbl,\
