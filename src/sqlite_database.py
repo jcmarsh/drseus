@@ -127,7 +127,7 @@ def print_sqlite_database(sqlite_database):
                         print(" " + str(row[i]) + (row_spacing - len(str(row[i])) - 1) * " ", end="")
                 # Special cases for ldstr_inst_tbl
                 elif str(tn) == "ls_inst":
-                    if i == 2 or i == 4 or i == 6: # address, l_s_addr, or L2_set
+                    if i == 2 or i == 4 or i == 7 : # address, l_s_addr, or L2_set
                         print(" " + hex(row[i]) + (row_spacing - len(hex(row[i])) - 1) * " ", end="")
                     else:
                         print(" " + str(row[i]) + (row_spacing - len(str(row[i])) - 1) * " ", end="")
@@ -188,6 +188,8 @@ class sqlite_database(object):
         self.ldstr_addr_type   = "INTEGER"
         self.inst_name_col     = "instruction"
         self.inst_name_type    = "TEXT"
+        self.finst_name_col    = "full_inst" # TODO: could this replace "instruction" which is only the type?
+        self.finst_name_type   = "TEXT"
         self.cache_set_col     = "L2_set"
         self.cache_set_type    = "INTEGER"
         self.L2CC_look_t_col   = "L2CC_look_t"
@@ -252,7 +254,7 @@ class sqlite_database(object):
         c = conn.cursor()
 
         # Add to database
-        c.execute('CREATE TABLE {tn} ({c1} {t1}, {c2} {t2}, {c3} {t3}, {c4} {t4}, {c5} {t5}, {c6} {t6}, {c7} {t7}, {c8} {t8}, {c9} {t9}, {c10} {t10}, {c11} {t11}, {c12} {t12}, {c13} {t13}, {c14} {t14}, {c15} {t15}, {c16} {t16}, {c17} {t17}, {c18} {t18}, {c19} {t19}, {c10} {t20}, {c21} {t21}, {c22} {t22}, {c23} {t23})'\
+        c.execute('CREATE TABLE {tn} ({c1} {t1}, {c2} {t2}, {c3} {t3}, {c4} {t4}, {c5} {t5}, {c6} {t6}, {fi_c} {fi_t}, {c7} {t7}, {c8} {t8}, {c9} {t9}, {c10} {t10}, {c11} {t11}, {c12} {t12}, {c13} {t13}, {c14} {t14}, {c15} {t15}, {c16} {t16}, {c17} {t17}, {c18} {t18}, {c19} {t19}, {c20} {t20}, {c21} {t21}, {c22} {t22}, {c23} {t23})'\
             .format(tn=self.ldstr_inst_tbl,\
                     c1=self.cycles_total_col, t1=self.cycles_total_type,\
                     c2=self.cycles_diff_col, t2=self.cycles_diff_type,\
@@ -260,6 +262,7 @@ class sqlite_database(object):
                     c4=self.ldstr_col, t4=self.ldstr_type,\
                     c5=self.ldstr_addr_col, t5=self.ldstr_addr_type,\
                     c6=self.inst_name_col, t6=self.inst_name_type,\
+                    fi_c=self.finst_name_col, fi_t=self.finst_name_type,\
                     c7=self.cache_set_col, t7=self.cache_set_type,\
                     c8=self.L2CC_look_t_col, t8=self.L2CC_look_t_type,\
                     c9=self.L2CC_look_d_col, t9=self.L2CC_look_d_type,\
@@ -273,7 +276,7 @@ class sqlite_database(object):
                     c17=self.PMU_c3_d_col, t17=self.PMU_c3_d_type,\
                     c18=self.PMU_c4_t_col, t18=self.PMU_c4_t_type,\
                     c19=self.PMU_c4_d_col, t19=self.PMU_c4_d_type,\
-                    c10=self.PMU_c5_t_col, t20=self.PMU_c5_t_type,\
+                    c20=self.PMU_c5_t_col, t20=self.PMU_c5_t_type,\
                     c21=self.PMU_c5_d_col, t21=self.PMU_c5_d_type,\
                     c22=self.PMU_c6_t_col, t22=self.PMU_c6_t_type,\
                     c23=self.PMU_c6_d_col, t23=self.PMU_c6_d_type))
