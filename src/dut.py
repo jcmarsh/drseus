@@ -637,11 +637,16 @@ class dut(object):
             # TODO: Handle correctly
             print("Handle c read_serial timeout correctly")
 
-        output_file = open("dut_output.txt", 'r')
+        output_file = open("dut_output.txt", 'rb')
 
         while True:
             # TODO: What about encodings? Will that be a problem is the program is spitting out something like a jpeg instead of ascii text?
-            char = output_file.read(1).replace('\x00', 'X')
+            #char = output_file.read(1).replace('\x00', 'X')
+            char = output_file.read(1)
+            if (char == '\x00'):
+                char = 'X'
+                print("Replaced null byte with 'X'")
+            char = char.decode("ascii")
 
             # except SerialException: # TODO: Detect in the c read_serial program
             #    errors += 1
