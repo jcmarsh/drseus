@@ -11,7 +11,7 @@ from .jtag.bdi import bdi
 from .jtag.dummy import dummy
 from .jtag.openocd import openocd
 from .simics import simics
-from .sqlite_database import sqlite_database, print_sqlite_database, assembly_golden_run, record_tags
+from .sqlite_database import sqlite_database, print_sqlite_database, assembly_golden_run, record_tags, get_database_path
 
 from .sqlite_test import run_sqlite_tests
 
@@ -92,22 +92,21 @@ class fault_injector(object):
                     if self.bbzybo:
                         record_tags(self.options.cache_sqlite)
                         #self.debugger.start_dut()
-                        # TODO: How to read cycle count?
-                        sleep(1)
                         print("Breaking on", self.options.cache_sqlite.get_start_addr())
                         self.debugger.break_dut(hex(self.options.cache_sqlite.get_start_addr()))
                         start_cycle = self.debugger.check_cycles()
                         print("Breaking on", self.options.cache_sqlite.get_end_addr())
                         self.debugger.break_dut(hex(self.options.cache_sqlite.get_end_addr()))
-                        sleep(1)
                         end_cycle = self.debugger.check_cycles()
                         print("Raw cycles: ", start_cycle, end_cycle)
                         # Cortex-A9 PMCCNTR has two modes, use this to convert if counting 1 per 64 cycles (instead of 1 to 1)
+                        # Start cycle is read before changing granularities
                         # start_cycle = start_cycle * 64 # beginning will underestimated
                         # end_cycle = end_cycle * 64 + 64 # ending will be overestimated
-                        # print("Start and end convert: ", start_cycle, end_cycle)
+                        end_cycle = start_cycle + ((end_cycle - start_cycle) * 64) # when run, cycle granularity will be x64 for the first reading, 1x after that.
+                        print("Start and end convert: ", start_cycle, end_cycle)
                         print("Diff: ", end_cycle - start_cycle)
-                        self.debugger.continue_dut()
+                        self.debugger.start_dut()
                         self.options.cache_sqlite.log_start_end(start_cycle, end_cycle)
                     else:
                         self.debugger.dut.write('{}\n'.format(
@@ -177,7 +176,7 @@ class fault_injector(object):
             print("\tDone Resetting DUT")
             print("\tTiming application")
             time_application()
-            print("\tDone timing appliaction")
+            print("\tDone timing application")
         if not self.db.campaign.command:
             self.db.campaign.execution_time = self.options.delay
             sleep(self.db.campaign.execution_time)
@@ -324,7 +323,11 @@ class fault_injector(object):
                 if sleep_time > 0:
                     sleep(sleep_time)
 
-        def perform_injections():
+        def perform_injections(reset_next_run):
+            print("Using database: %s" % (get_database_path(self.options)))
+            sql_db = sqlite_database(self.options, get_database_path(self.options))
+            # TODO: Start cycle isn't used here?
+            print("Start cycle: %d" % (sql_db.get_start_cycle()))
             if timer is not None:
                 start = perf_counter()
             while True:
@@ -341,14 +344,15 @@ class fault_injector(object):
                 self.db.result.num_injections = self.options.injections
                 if not self.db.campaign.simics:
                     if self.options.command == 'inject':
-                        try:
-                            # Reset the DUT
-                            self.debugger.reset_dut()
-                        except DrSEUsError as error:
-                            self.db.result.outcome_category = 'Debugger error'
-                            self.db.result.outcome = str(error)
-                            self.db.log_result()
-                            continue
+                        if reset_next_run:
+                            try:
+                                # Reset the DUT. reset_dut calls reboot.sh
+                                self.debugger.reset_dut()
+                            except DrSEUsError as error:
+                                self.db.result.outcome_category = 'Debugger error'
+                                self.db.result.outcome = str(error)
+                                self.db.log_result()
+                                continue
                     if self.db.campaign.aux:
                         self.db.log_event(
                             'Information', 'AUX', 'Command',
@@ -365,7 +369,7 @@ class fault_injector(object):
                 log_thread = Thread(target=background_log)
                 try:
                     # Run the program while injected some number of faults
-                    (self.db.result.num_register_diffs, self.db.result.num_memory_diffs, persistent_faults) = self.debugger.inject_faults()
+                    (self.db.result.num_register_diffs, self.db.result.num_memory_diffs, persistent_faults, reset_next_run) = self.debugger.inject_faults(sql_db)
                     if self.options.log_delay is not None:
                         log_thread.start()
                 except DrSEUsError as error:
@@ -429,7 +433,7 @@ class fault_injector(object):
             # Executes multple iterations of the program, injecting one or more fault into each
             # perform_injections() sets up all of the iterations of the program;
             #   Injections are done in jtag/__init__.py
-            perform_injections()
+            perform_injections(True)
         except KeyboardInterrupt:
             self.db.result.outcome_category = 'Incomplete'
             self.db.result.outcome = 'Interrupted'

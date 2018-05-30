@@ -51,7 +51,7 @@ class openocd(jtag):
                           'unpredictable behavior if multiple ZedBoards are '
                           'connected')
         #options.debugger_ip_address = '127.0.0.1'
-        options.debugger_ip_address = 'raspberrypi.local'
+        options.debugger_ip_address = 'rpi3open.local'
         self.prompts = ['>']
         #RG self.port = find_open_port()
         self.port = 4444
@@ -108,30 +108,64 @@ class openocd(jtag):
         return super().command(command, expected_output, error_message,
                                log_event, '\n', True)
 
+    # TODO: Consider changing these to use the command function in super (__init__.py)
     def start_dut(self):
         self.telnet.write(bytes('halt\n', encoding='utf-8'))
         self.telnet.write(bytes('resume 0x00100000\n', encoding='utf-8'))
 
+    # Restarts the program from the beginning, halts as specified address
     def break_dut(self, address):
         self.telnet.write(bytes('halt\n', encoding='utf-8'))
         self.telnet.write(bytes('bp ' + address + ' 1 hw\n', encoding='utf-8'))
         self.telnet.write(bytes('resume 0x00100000\n', encoding='utf-8'))
-        sleep(.1)
+        self.telnet.read_until(b'target halted in ARM state due to breakpoint, current mode: System')
+        self.telnet.write(bytes('rbp ' + address + '\n', encoding='utf-8'))
+
+    # Program must be stopped already, runs until breakpoint is hit number of times
+    def break_dut_after(self, address, times):
+        breaks = times
+        self.telnet.write(bytes('bp ' + address + ' 1 hw\n', encoding='utf-8'))
+        self.telnet.write(bytes('resume\n', encoding='utf-8'))
+        self.telnet.read_until(b'target halted in ARM state due to breakpoint, current mode: System')
+        breaks = breaks - 1
+        while (breaks > 0):
+            self.telnet.write(bytes('step\n', encoding='utf-8'))
+            self.telnet.write(bytes('resume\n', encoding='utf-8'))
+            self.telnet.read_until(b'target halted in ARM state due to breakpoint, current mode: System')
+            breaks = breaks -1
+        self.telnet.write(bytes('rbp ' + address + '\n', encoding='utf-8'))
+
+    def single_dut_break(self, address):
+        # Dut should already be halted from previous break
+        self.telnet.write(bytes('bp ' + address + ' 1 hw\n', encoding='utf-8'))
+        self.telnet.write(bytes('step\n', encoding='utf-8'))
+        self.telnet.write(bytes('resume\n', encoding='utf-8'))
+        self.telnet.read_until(b'target halted in ARM state due to breakpoint, current mode: System')
         self.telnet.write(bytes('rbp ' + address + '\n', encoding='utf-8'))
 
     def check_cycles(self):
         self.telnet.write(bytes('arm mrc 15 0 9 13 0\n', encoding='utf-8'))
-        # To comment out this read; must call read_until()
-        print("Returned?\n", self.telnet.read_until(b"arm mrc 15 0 9 13 0\r\n"))
-        retval = self.telnet.read_some()
-        print("Returned?: ", retval)
-        if retval is '':
-            print("Trying check_cycles again (null)")
+        # If you comment out this print, you must keep the call to read_until()
+        print("Returned 0?\n", self.telnet.read_until(b"arm mrc 15 0 9 13 0\r\n"))
+        while True:
             retval = self.telnet.read_some()
-        retval = retval.decode('ascii')
-        if '\r\n' in retval: # Sometimes the return doesn't include endline chars "\r\n\r>"
-            retval = retval[:-5]
-        retval = int(retval)
+            print("Returned 1?: ", retval)
+            retval = retval.decode('ascii')
+
+
+            if retval is '':
+                print("Trying check_cycles again (null)")
+                retval = self.telnet.read_some()
+            elif 'Timeout' in retval:
+                print("Taking too long. Try again")
+                retval = self.telnet.read_some()
+            else:
+                try:
+                    retval = int(retval.strip().strip('>').strip('\r').strip('\n').strip('\r'))
+                    break
+                except ValueError:
+                    print("Parsing cycles failed\n")
+
         #print("Parse problems?", retval)
         return retval
         # print("Returned?\n", self.telnet.read_some())
@@ -258,3 +292,8 @@ class openocd(jtag):
         else:
             self.command('reg {} {}'.format(register_name, value),
                          error_message='Error setting register value')
+
+    def set_cycle_granularity(self):
+        self.telnet.write(bytes('arm mcr 15 0 9 12 0 1091121153\n', encoding='utf-8'))
+        response = self.telnet.read_until(b"arm mcr 15 0 9 12 0 1091121153\r\n")
+        print('Set single cycle counter granularity: %s' % (response)) # TODO: Not sure if this print makes sense...

@@ -11,6 +11,7 @@ parsetab.py
 power_switch_log.txt
 python
 simics-workspace
+dut_output.txt
 
 # Temporary files
 *.swp

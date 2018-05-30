@@ -159,17 +159,34 @@ class jtag(object):
         event.success = True
         event.save()
 
-    def inject_faults(self):
+    # TODO: Doesn't need to be a class function
+    def PrevAccess(self, sql_db, cycle, cache_set, assoc):
+        candidates = []
+        current_cycle = cycle;
+        while len(candidates) < assoc:
+            current_cycle, address = sql_db.PreviousLdrStr(current_cycle, cache_set)
+            if address == None:
+                return candidates
+            if not (address in candidates):
+                candidates.append(address)
+        return candidates
+
+    # Returns: num_register_diffs, num_memory_diffs, persistent_faults, reset_next?
+    def inject_faults(self, sql_db):
         # Select injection times
         injection_times = []
         for i in range(self.options.injections):
-            injection_times.append(uniform(0, self.db.campaign.execution_time))
+            # Pulls first and last cycle counts from the load / store database
+            new_inject_time = int(uniform(sql_db.get_start_cycle(), sql_db.get_end_cycle()))
+            # print("Injection time,", new_inject_time, " : between ", sql_db.get_start_cycle(), sql_db.get_end_cycle())
+            injection_times.append(new_inject_time)
 
         # Select targets and injection object
         injections = []
         if hasattr(self, 'targets') and self.targets:
             for injection_time in sorted(injection_times):
                 injection = choose_injection(self.targets, self.options.selected_target_indices)
+                print(injection)
                 injection = self.db.result.injection_set.create(success=False, time=injection_time, **injection)
                 injections.append(injection)
 
@@ -179,6 +196,8 @@ class jtag(object):
         print("Injections:")
         for injection in injections:
             print("\tInjection:", injection.target)
+            print("\t", injection)
+            print("\t", injection.bit, " ", injection.field, " ", injection.register)
         print("Possible targets:")
         for target in self.targets:
             print("\tTarget:", target)
@@ -186,7 +205,6 @@ class jtag(object):
         print("********************************************************************************")
 
         if self.db.campaign.command:
-            # TODO: Need to call self.dut.break_dut so skip first bits?
             # TODO: Needs to deal with timing better, at least for cache.
             print("**** It's an injection start ****")
             self.start_dut()
@@ -196,8 +214,140 @@ class jtag(object):
         for injection in injections:
             if injection.target in ('CPU', 'GPR', 'TLB') or ('CP' in self.targets[injection.target] and self.targets[injection.target]['CP']):
                 self.select_core(injection.target_index)
-            sleep(injection.time-previous_injection_time)
-            self.halt_dut()
+
+            if (injection.target == 'CACHE_L2'):
+                # For cache injection:
+                # Select the desired cache line (injection.bit / injection.field)
+                # From the stopping time, find all future reads and writes
+                cache_set = int(injection.register[-4:])
+                print("Is cache_set being set for the cache? ", cache_set)
+                ways = 8 # TODO: Hardcoding for L2 cache
+
+                # While still finding them, do this...
+                # TEST CODE
+                # FIB_SHORT: candidates = self.PrevAccess(sql_db, 1000, 1536, ways)
+                # LZO:
+                candidates = self.PrevAccess(sql_db, 51000, 1056, ways) # No effect
+
+                # candidates = self.PrevAccess(sql_db, injection.time, cache_set, ways)
+                # Candidates are the addresses of the data in the cache shifted to remove the byte offset
+                #   Since there are 32 bytes in each cache line, that means >> 5
+                #   TODO: Make sure byte addressable and not word addressable.
+
+                print("Candidate addresses for the injection!: ", candidates)
+
+                # Parse from injection.field: 84   data_2   cacheline_1455
+                # TODO: limits to a 1 digit number of ways
+                way_impacted = 0 # TEST CODE
+                # way_impacted = int(injection.field[-1:])
+
+                if way_impacted >= len(candidates):
+                    print("No fault injected: cache line was not valid.")
+                    # TODO: How to return from this?
+                    return None, None, False, False
+
+                # target picked, so now need all following accesses (until a store or slow load)
+                # For out example (way 0 of cache line 1531 at cycle 30500, address 1097584 for fib_short):
+                #   SELECT * FROM ls_inst WHERE L2_set = 1531 AND l_s_addr = 1097584 AND cycles_total > 30500;
+                #   30586|14|1055908|0|1097584|LDM|1531
+                #   31133|13|1055900|1|1097584|STM|1531 <- don't return... signals end.
+
+                # LZO example:
+                # sqlite> SELECT * FROM ls_inst WHERE L2_set = 1056 AND l_s_addr = 1147908;
+                # 58607|14|1061604|1|1147908|STR|1056
+                # 357818|14|1050984|0|1147908|LDR|1056
+                # 388511|14|1053628|0|1147908|LDR|1056
+
+                #injection_targets = sql_db.NextLdrStr(cycle, cache_set, (candidates[way_impacted] << 5) + injection.bit)
+                # FIB_SHORT: injection_targets = sql_db.NextLdrStr(1000, 1536, (candidates[way_impacted] << 5) + 16) # TEST CODE
+                # LZO:
+                injection_targets = sql_db.NextLdrStr(51000, 1056, (candidates[way_impacted] << 5) + 16) # TEST CODE
+                print("Injection targets: ", injection_targets)
+
+                if (len(injection_targets) == 0):
+                    print("No Fault injected: value in cache never read.")
+                    # TODO: How to return from this?
+                    return None, None, False, False
+
+                # Need advance the DUT to the first injection
+                # On first injection, figure out the corrupted bit
+                # On all injections, figure out the target and load the wrong value and continue.
+                #skip_count = sql_db.SkipCount(injection_cycle...?, address)
+                prev_cycle = injection_targets[0][0]
+                skip_count = sql_db.SkipCount(0, prev_cycle, injection_targets[0][1]) #, (candidates[way_impacted] << 5) + 16)
+                print("Skip Count! ", skip_count)
+
+                # Get the DUT to the correct location
+                start_addr = hex(sql_db.get_start_addr())
+                print("Run until start address: ", start_addr)
+                self.break_dut(start_addr) # Restart, run until start tag
+                self.break_dut_after(str(injection_targets[0][1]), skip_count) # runs current, Removes breakpoint.
+
+                inject_value = None
+                for target in injection_targets:
+                    # Set breakpoint
+                    print("Target: ", target)
+                    skip_count = sql_db.SkipCount(prev_cycle, target[0], target[1])
+                    if (skip_count >= 1):
+                        print("********************************")
+                        print("* Need to implement this case! *")
+                        print("********************************")
+                    self.single_dut_break(str(target[1]))
+
+                    # TODO: The target register should really be part of the database
+                    # Check program counter
+                    program_counter = self.command(command = 'reg pc', error_message = 'Oh boffins!')
+                    print("PC: ", program_counter)
+                    program_counter = (program_counter.split())[2]
+                    print("PC: ", program_counter)
+                    # read instruction
+                    target_reg = self.command(command = 'arm disassemble %s' % (program_counter), error_message = 'You have done it now.')
+                    print("Target Reg: ", target_reg)
+                    instruction = (target_reg.split())[2]
+                    if not "LD" in instruction:
+                        print("YOU SHOULD ONLY BE LOOKING AT LOADS!")
+                    # find target
+                    target_reg = (target_reg.split())[3][:3]
+                    if target_reg == 'r13':
+                        target_reg = 'sp'
+                    if target_reg == 'r14':
+                        target_reg = 'lr'
+                    if target_reg == 'r15':
+                        target_reg = 'pc'
+                    print("Target Reg: ", target_reg)
+
+                    # let data load (step):
+                    self.command(command = 'step', error_message = 'Failed to step')
+                    # inject fault <- injection.injected_value = hex(int(injection.gold_value, base=16) ^ (1 << injection.bit))
+                    if inject_value == None:
+                        # read value from target (set injection.gold_value?)
+                        value = self.command(command = 'reg %s' % (target_reg), error_message = 'Could not read reg')
+                        print("inject value: ", value)
+                        value = (value.split())[2]
+                        inject_value = int(value, 16)
+                        print("inject_value: ", hex(inject_value))
+                        # flip bit and save new value in inject_value
+                        injection.gold_value = inject_value
+                        print("Injection bit: ", injection.bit, " / ", injection.bit % 32)
+                        inject_value = inject_value ^ (1 << (injection.bit % 32)) # mod 32 for size of registers (injection.bit is for the whole cache line)
+                        injection.injected_value = inject_value # TODO: Could clean up
+                        print("inject_value: ", hex(inject_value))
+                    # inject "inject value" in target register
+                    self.command(command = 'reg %s 0x%s' % (target_reg, hex(inject_value)), #error_message = 'Failed to inject fault in register')
+                                 # expected_output = '%s (/32): 0x%s' % (target_reg, hex(inject_value)),
+                                 error_message = 'Failed to inject fault in register%s' % (target_reg))
+                    print("Did that bloody work?")
+
+                    self.command(command = 'resume', error_message = "Failed to resume")
+
+                    # injection.save()? injection.success, set_register_value... makes sense to write new functions or modify?
+
+                    prev_cycle = target[0]
+
+                # All faults should have now been injected
+                return None, None, False, True
+
+            # Needs to have processor halted at correct point here.
             previous_injection_time = injection.time
             injection.processor_mode = self.get_mode()
             if 'access' in (self.targets[injection.target]
@@ -241,7 +391,7 @@ class jtag(object):
                         'Error', 'Debugger', 'Injection failed')
                 self.set_mode(injection.processor_mode)
             self.continue_dut()
-        return None, None, False
+        return None, None, False, True
 
     def command(self, command, expected_output, error_message,
                 log_event, line_ending, echo):

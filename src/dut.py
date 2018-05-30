@@ -14,6 +14,7 @@ from scp import SCPClient
 from serial import Serial
 from serial.serialutil import SerialException
 from shutil import copy, rmtree
+from subprocess import run
 from socket import AF_INET, SOCK_STREAM, socket
 from sys import stdout
 from termcolor import colored
@@ -626,21 +627,32 @@ class dut(object):
         errors = 0
         hanging = False
         returned = False
-        print("read_until: " + str(self.options.timeout+5))
+        print("read_until: " + str(self.options.timeout+5) + " or: " + self.prompt)
+
+        # TODO: Pass arguments correctly
+        try:
+            with timeout(self.options.timeout+5):
+                run("./read_serial/read_serial /dev/ttyUSB1 safeword > dut_output.txt", shell=True)
+        except TimeoutException:
+            # TODO: Handle correctly
+            print("Handle c read_serial timeout correctly")
+
+        output_file = open("dut_output.txt", 'r')
+
         while True:
-            try:
-                with timeout(self.options.timeout+5):
-                    char = self.serial.read().decode('utf-8', 'replace')
-            except SerialException:
-                errors += 1
-                self.db.log_event(
-                    'Error', 'DUT' if not self.aux else 'AUX', 'Read error',
-                    self.db.log_exception)
-                self.close()
-                self.open()
-                continue
-            except TimeoutException:
-                char = ''
+            # TODO: What about encodings? Will that be a problem is the program is spitting out something like a jpeg instead of ascii text?
+            char = output_file.read(1).replace('\x00', 'X')
+
+            # except SerialException: # TODO: Detect in the c read_serial program
+            #    errors += 1
+            #    self.db.log_event(
+            #        'Error', 'DUT' if not self.aux else 'AUX', 'Read error',
+            #        self.db.log_exception)
+            #    self.close()
+            #    self.open()
+            #    continue
+
+            # TODO: Can this still happen?
             if not char:
                 hanging = True
                 self.db.log_event(
@@ -716,7 +728,11 @@ class dut(object):
                 break
             if not boot and buff and buff.endswith('\n'):
                 if self.db.result is None:
-                    self.db.campaign.save()
+                    try:
+                        self.db.campaign.save()
+                    except ValueError:
+                        print("Campaign.save Failed.")
+                        # self.db.campaign.save()
                 else:
                     self.db.result.save()
         self.stop_timer()

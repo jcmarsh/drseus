@@ -207,6 +207,7 @@ def choose_injection(targets, selected_target_indices):
     random_bit = randrange(total_bits)
     bit_sum = 0
     for target in target_list:
+        # TODO: Start here.
         bit_sum += target[1]
         if random_bit < bit_sum:
             injection['target'] = target[0]
@@ -229,15 +230,14 @@ def choose_injection(targets, selected_target_indices):
             else:
                 raise Exception('invalid selected target indices')
     if 'target_index' in injection:
-        injection['target_name'] = '{}[{}]'.format(injection['target'],
-                                                   injection['target_index'])
+        injection['target_name'] = '{}[{}]'.format(injection['target'], injection['target_index'])
     else:
         injection['target_name'] = injection['target']
     register_list = []
     total_bits = 0
-    print("Registers: ")
+    # print("Registers: ")
     for register in target['registers']:
-        print("\tregister:", register, " - bits:", target['registers'][register]['total_bits'])
+        # print("\tregister:", register, " - bits:", target['registers'][register]['total_bits'])
         bits = target['registers'][register]['total_bits']
         register_list.append((register, bits))
         total_bits += bits
@@ -298,7 +298,41 @@ def choose_injection(targets, selected_target_indices):
         for index in injection['register_index'][:-1]:
             injection['tlb_entry'] += '[{}]'.format(index)
     elif 'type' in target and target['type'] == 'cache':
-        print("**** Yo James, What's up?")
+        # Cache targets are done by cache "set", each which has n-ways. JSON looks like:
+        # {'ways': 8, total_bits': 2192, 'index': 768, 'bits': 2192, 'fields':
+        #     [['tag_0', [273, 258]], ['data_0', [257, 2]], ['flag_0', [1, 0]],
+        #     .... line for each way }
+        print("Selected register: ", register)
+        print("Selected bit: ", random_bit, " previous: ", bit_sum, " targeted then: ", bit_sum - random_bit)
+        injection['bit'] = bit_sum - random_bit
+        if (injection['bit'] > register['total_bits']):
+            print("SHOULD NEVER HAPPEN")
+        if 'fields' in register and 'ways' in register:
+            bit_sum = 0
+            ways = int(register['ways'])
+            # TODO: target_way doesn't matter here. jtag/__init__.py assumes an even distribution and picks randomly
+            target_way = int(injection['bit'] / (int(register['bits']) / ways))
+            bit_in_way = int(injection['bit'] % (int(register['bits']) / ways))
+            print("Target way: ", target_way, " Target bit: ", bit_in_way)
+
+            injection['bit'] = bit_in_way
+            # So the "way" is selected. Now is the error in the tag, data, or flags?
+            for field in register['fields']:
+                # print(field)
+                if 'flag_' + str(target_way) in field:
+                    if bit_in_way <= field[1][0] and bit_in_way >= field[1][1]:
+                        print("FLAG")
+                        injection['field'] = field[0]
+                elif 'data_' + str(target_way) in field:
+                    if bit_in_way <= field[1][0] and bit_in_way >= field[1][1]:
+                        print("DATA")
+                        injection['field'] = field[0]
+                elif 'tag_' + str(target_way) in field:
+                    if bit_in_way <= field[1][0] and bit_in_way >= field[1][1]:
+                        print("TAG")
+                        injection['field'] = field[0]
+        else:
+            print("Cache has no fields!")
     else:
         if 'bits' in register:
             injection['bit'] = randrange(register['bits'])

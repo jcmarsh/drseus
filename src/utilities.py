@@ -265,6 +265,7 @@ def create_campaign(options):
         return -1
     else:
         print('created campaign {}'.format(campaign.id))
+        call("mv ../scripts/gdb_log_* ./campaign-data/{}/".format(campaign.id), shell=True)
         call(["scp", "pi@{}:~/jtag_eval/openOCD_cfg/mnt/output.txt".format(options.debugger_ip_address), "./campaign-data/{}/openOCD_output.txt".format(campaign.id)])
 
 def inject_campaign(options):
@@ -274,7 +275,7 @@ def inject_campaign(options):
     print("In inject_campaign")
     cache_sqlite_path = get_database_path(options)
     database = sqlite_database(options, cache_sqlite_path)
-    print_sqlite_database(database)
+    # print_sqlite_database(database)
 
     def perform_injections(iteration_counter, switch):
         drseus = fault_injector(options, switch)
