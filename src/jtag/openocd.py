@@ -50,8 +50,7 @@ class openocd(jtag):
                     print('could not find device information file, '
                           'unpredictable behavior if multiple ZedBoards are '
                           'connected')
-        #options.debugger_ip_address = '127.0.0.1'
-        options.debugger_ip_address = 'rpi3open.local'
+        options.debugger_ip_address = '127.0.0.1'
         self.prompts = ['>']
         #RG self.port = find_open_port()
         self.port = 4444
