@@ -632,7 +632,7 @@ class dut(object):
         # TODO: Pass arguments correctly
         try:
             with timeout(self.options.timeout+5):
-                run("./read_serial/read_serial /dev/ttyUSB1 safeword > dut_output.txt", shell=True)
+                run("./read_serial/read_serial /dev/ttyUSBzybo safeword > dut_output.txt", shell=True)
         except TimeoutException:
             # TODO: Handle correctly
             print("Handle c read_serial timeout correctly")
