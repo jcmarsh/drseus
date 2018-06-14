@@ -32,7 +32,7 @@ def assembly_golden_run(sqlite_database, debugger):
     cprint("Running assembly golden run", 'yellow')
 
     localpath = sqlite_database.database
-    p = subprocess.Popen("cp " + localpath + " ./jtag_eval/openOCD_cfg/mnt", shell=True)
+    p = subprocess.Popen("cp " + localpath + " ../jtag_eval/openOCD_cfg/mnt", shell=True)
     p.communicate()
     #p.kill()
 
@@ -48,18 +48,17 @@ def assembly_golden_run(sqlite_database, debugger):
     sleep(1)
 
     # Run on the database
-    print("Running asm_golden_run.py")
-    command = " 'cd ./jtag_eval/openOCD_cfg/mnt;python ./asm_golden_run.py |& tee asm_output.txt'"
-    p = subprocess.Popen("x-terminal-emulator -e " + command, shell=True)
+    print("Running asm_golden_run.py") # TODO: Use a new terminal?
+    p = subprocess.Popen("python asm_golden_run.py \|\& tee asm_output.txt", cwd="../jtag_eval/openOCD_cfg/mnt", shell=True)
 
     # Run until program is done
     debugger.dut.read_until()
-    subprocess.call("touch ./jtag_eval/openOCD_cfg/mnt/done", shell=True)
+    subprocess.call("touch ../jtag_eval/openOCD_cfg/mnt/done", shell=True)
     p.communicate()
 
     # Transfer back updated database
     print("Transfering back database")
-    p = subprocess.Popen("cp ./jtag_eval/openOCD_cfg/mnt/database.sqlite " + localpath, shell=True)
+    p = subprocess.Popen("cp ../jtag_eval/openOCD_cfg/mnt/database.sqlite " + localpath, shell=True)
     p.communicate()
     #p.kill()
 

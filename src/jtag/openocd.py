@@ -180,8 +180,27 @@ class openocd(jtag):
                     ['JTAG tap: zynq.dap tap/device found: 0x4ba00477'],
                     max(attempts-1, 1))
         elif self.bbzybo:
-            p = subprocess.Popen('cd ../scripts/;./reboot.sh', shell=True)
+
+            print("Reseting DUT")
+
+            # Shutdown current openocd
+            p = subprocess.Popen("sudo pkill openocd", shell=True)
             p.communicate()
+
+            sleep(1)
+
+            # Reupload to zybo board with xsdb
+            p = subprocess.Popen("xsdb ./instr_nostart.xsdb", cwd="../jtag_eval/xsdb/", shell=True)
+            p.communicate()
+
+            sleep(2)
+
+            # Restart openocd
+            p = subprocess.call("gnome-terminal --command=\"openocd -f openocd.cfg\"", cwd="../jtag_eval/openOCD_cfg", shell=True)
+            # p.communicate()
+
+            sleep(2)
+
             self.open()
         else:
             super().reset_dut(
