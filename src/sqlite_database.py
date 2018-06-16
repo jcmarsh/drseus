@@ -49,7 +49,8 @@ def assembly_golden_run(sqlite_database, debugger):
 
     # Run on the database
     print("Running asm_golden_run.py") # TODO: Use a new terminal?
-    p = subprocess.Popen("python asm_golden_run.py \|\& tee asm_output.txt", cwd="../jtag_eval/openOCD_cfg/mnt", shell=True)
+    command = "python asm_golden_run.py |& tee asm_output.txt"
+    p = subprocess.Popen("gnome-terminal --command='bash -c \"%s\"'" % command, cwd="../jtag_eval/openOCD_cfg/mnt", shell=True)
 
     # Run until program is done
     debugger.dut.read_until()
