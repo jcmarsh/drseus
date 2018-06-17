@@ -196,7 +196,7 @@ class openocd(jtag):
             sleep(2)
 
             # Restart openocd
-            p = subprocess.call("gnome-terminal --command=\"openocd -f openocd.cfg\"", cwd="../jtag_eval/openOCD_cfg", shell=True)
+            p = subprocess.call("gnome-terminal -- openocd -f openocd.cfg", cwd="../jtag_eval/openOCD_cfg", shell=True)
             # p.communicate()
 
             sleep(2)
