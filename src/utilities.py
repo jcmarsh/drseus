@@ -265,8 +265,13 @@ def create_campaign(options):
         return -1
     else:
         print('created campaign {}'.format(campaign.id))
+        # Capture output logs
         call(["mv", "../jtag_eval/openOCD_cfg/mnt/output.txt", "./campaign-data/{}/openOCD_output.txt".format(campaign.id)])
         call(["mv", "../jtag_eval/openOCD_cfg/mnt/asm_output.txt", "./campaign-data/{}/asm_golden_run_output.txt".format(campaign.id)])
+        # Capture script as run
+        call(["mv", "../jtag_eval/openOCD_cfg/mnt/asm_golden_run.py", "./campaign-data/{}/asm_golden_run.py".format(campain.id)])
+        # Capture code as run
+        call(["mv", "../jtag_eval/openOCD_cfg/mnt/bench_source.tar.gz", "./campaing-data/{}/".format(campain.id)])
 
 def inject_campaign(options):
     campaign = get_campaign(options)
