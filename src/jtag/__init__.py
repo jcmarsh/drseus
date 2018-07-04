@@ -165,6 +165,7 @@ class jtag(object):
         current_cycle = cycle;
         while len(candidates) < assoc:
             current_cycle, address = sql_db.PreviousLdrStr(current_cycle, cache_set)
+            # Address here has been >> 5 to remove low order bits (line width is 32 bytes)
             if address == None:
                 return candidates
             if not (address in candidates):
