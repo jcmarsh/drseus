@@ -276,7 +276,7 @@ class sqlite_database(object):
         conn = connect(self.database)
         c = conn.cursor()
 
-        c.execute("SELECT * FROM ls_inst WHERE cycles_total > {} AND cycles_total < {} AND address = {}".format(start_cycle, end_cycle, address))
+        c.execute("SELECT * FROM ls_inst WHERE cycles_t > {} AND cycles_t < {} AND address = {}".format(start_cycle, end_cycle, address))
         retval = c.fetchall()
 
         cycles_list = []
@@ -295,7 +295,7 @@ class sqlite_database(object):
         conn = connect(self.database)
         c = conn.cursor()
 
-        # SELECT * FROM ls_inst WHERE cycles_total > 18000 AND load0_store1 = 0 LIMIT 1;
+        # SELECT * FROM ls_inst WHERE cycles_t > 18000 AND load0_store1 = 0 LIMIT 1;
         c.execute("SELECT address FROM {} WHERE {} > {} AND {} = 0 LIMIT 1".format(self.ldstr_inst_tbl, self.cycles_total_col, cycle, self.ldstr_col))
         address = c.fetchone()[0]
 
@@ -310,7 +310,7 @@ class sqlite_database(object):
         conn = connect(self.database)
         c = conn.cursor()
 
-        c.execute("SELECT * FROM ls_inst WHERE cycles_total > {} AND L2_set = {} AND l_s_addr = {} ORDER BY cycles_total ASC". format(cycle, cache_set, address))
+        c.execute("SELECT * FROM ls_inst WHERE cycles_t > {} AND L2_set = {} AND l_s_addr = {} ORDER BY cycles_t ASC". format(cycle, cache_set, address))
         retval = c.fetchall()
         if retval == None:
             return None
@@ -359,11 +359,11 @@ class sqlite_database(object):
 
         # Multi loads / stores complicate things... need to get all of the accesses from the same command and then pass them back one at a time
         # Cache lines are 8 Words... addresses need to lose last three bits (offset)
-        # SELECT l_s_addr FROM ls_inst WHERE cycles_total < 30500 AND L2_set = 1531 ORDER BY cycles_total DESC LIMIT 1;
+        # SELECT l_s_addr FROM ls_inst WHERE cycles_t < 30500 AND L2_set = 1531 ORDER BY cycles_t DESC LIMIT 1;
 
         # Get the cycles of the line that matches the criteria
-        # SELECT cycles_total FROM ls_inst WHERE cycles_total < 30500 AND L2_set = 1531 ORDER BY cycles_total DESC LIMIT 1;
-        c.execute("SELECT cycles_total FROM ls_inst WHERE cycles_total < {} AND L2_set = {} ORDER BY cycles_total DESC LIMIT 1".format(cycle, cache_set))
+        # SELECT cycles_t FROM ls_inst WHERE cycles_t < 30500 AND L2_set = 1531 ORDER BY cycles_t DESC LIMIT 1;
+        c.execute("SELECT cycles_t FROM ls_inst WHERE cycles_t < {} AND L2_set = {} ORDER BY cycles_t DESC LIMIT 1".format(cycle, cache_set))
         retval = c.fetchone()
         if retval == None:
             return None, None
@@ -371,8 +371,8 @@ class sqlite_database(object):
 
         # 32 bytes to a line, so shift the address right by 5
 
-        # Get all lines that match that cycles_total (accounts for multi loads / stores)
-        c.execute("SELECT l_s_addr FROM ls_inst WHERE cycles_total = {} AND L2_set = {}".format(found_cycles, cache_set))
+        # Get all lines that match that cycles_t (accounts for multi loads / stores)
+        c.execute("SELECT l_s_addr FROM ls_inst WHERE cycles_t = {} AND L2_set = {}".format(found_cycles, cache_set))
         retval = c.fetchall()
         if len(retval) > 1:
             # A single command is accessing multiple lines, save others for future calls... what if multple injections in a run?
@@ -430,7 +430,7 @@ class sqlite_database(object):
         conn = connect(self.database)
         c = conn.cursor()
 
-        # SELECT MIN(cycles_total) FROM ls_inst
+        # SELECT MIN(cycles_t) FROM ls_inst
         c.execute("SELECT MIN({}) FROM {}".format(self.cycles_total_col, self.ldstr_inst_tbl))
         retval = c.fetchone()[0]
 
@@ -455,7 +455,7 @@ class sqlite_database(object):
         conn = connect(self.database)
         c = conn.cursor()
 
-        # SELECT MAX(cycles_total) FROM ls_inst
+        # SELECT MAX(cycles_t) FROM ls_inst
         c.execute("SELECT MAX({}) FROM {}".format(self.cycles_total_col, self.ldstr_inst_tbl))
         retval = c.fetchone()[0]
 

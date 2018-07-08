@@ -249,7 +249,7 @@ class jtag(object):
 
                 # target picked, so now need all following accesses (until a store or slow load)
                 # For out example (way 0 of cache line 1531 at cycle 30500, address 1097584 for fib_short):
-                #   SELECT * FROM ls_inst WHERE L2_set = 1531 AND l_s_addr = 1097584 AND cycles_total > 30500;
+                #   SELECT * FROM ls_inst WHERE L2_set = 1531 AND l_s_addr = 1097584 AND cycles_t > 30500;
                 #   30586|14|1055908|0|1097584|LDM|1531
                 #   31133|13|1055900|1|1097584|STM|1531 <- don't return... signals end.
 
