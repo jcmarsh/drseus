@@ -272,6 +272,8 @@ def create_campaign(options):
         call(["mv", "../jtag_eval/openOCD_cfg/mnt/asm_golden_run.py", "./campaign-data/{}/asm_golden_run.py".format(campaign.id)])
         # Capture code as run
         call(["mv", "../jtag_eval/openOCD_cfg/mnt/bench_source.tar.gz", "./campaign-data/{}/".format(campaign.id)])
+        # Capture elf file that was executed
+        call(["mv", "../jtag_eval/xsdb/Attempt2.elf", "./campaign-data/{}/".format(campaign.id)])
 
 def inject_campaign(options):
     campaign = get_campaign(options)

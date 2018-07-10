@@ -4,6 +4,7 @@ from shutil import rmtree
 from threading import Thread
 from time import perf_counter, sleep
 from traceback import print_exc
+from subprocess import call
 
 from .database import database
 from .error import DrSEUsError
@@ -12,8 +13,6 @@ from .jtag.dummy import dummy
 from .jtag.openocd import openocd
 from .simics import simics
 from .sqlite_database import sqlite_database, print_sqlite_database, assembly_golden_run, record_tags, get_database_path
-
-from .sqlite_test import run_sqlite_tests
 
 class fault_injector(object):
     def __init__(self, options, power_switch=None):
@@ -326,6 +325,10 @@ class fault_injector(object):
         def perform_injections(reset_next_run):
             print("Using database: %s" % (get_database_path(self.options)))
             sql_db = sqlite_database(self.options, get_database_path(self.options))
+
+            print("Using elf: %s" % ("campaign-data/{}/Attempt2.elf".format(self.options.campaign_id)))
+            call(["cp", "campaign-data/{}/Attempt2.elf".format(self.options.campaign_id), "../jtag_eval/xsdb/"])
+
             # TODO: Start cycle isn't used here?
             print("Start cycle: %d" % (sql_db.get_start_cycle()))
             if timer is not None:
