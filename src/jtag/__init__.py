@@ -160,6 +160,7 @@ class jtag(object):
         event.save()
 
     # TODO: Doesn't need to be a class function
+    # PrevAccess: returns up to N unique word addresss to l2_set prior to inject_cycles
     def PrevAccess(self, sql_db, cycle, cache_set, assoc):
         candidates = []
         current_cycle = cycle;
@@ -220,50 +221,44 @@ class jtag(object):
                 # For cache injection:
                 # Select the desired cache line (injection.bit / injection.field)
                 # From the stopping time, find all future reads and writes
-                cache_set = int(injection.register[-4:])
+
                 print("Is cache_set being set for the cache? ", cache_set)
                 ways = 8 # TODO: Hardcoding for L2 cache
 
-                # While still finding them, do this...
                 # TEST CODE
-                # FIB_SHORT: candidates = self.PrevAccess(sql_db, 1000, 1536, ways)
-                # LZO:
-                candidates = self.PrevAccess(sql_db, 51000, 1056, ways) # No effect
+                # FIB_SHORT (test!): inject_cycles = 1000, inject_l2_set = 1536
+                # FIB_REC (l7_665): inject_cycles = 12080, inject_l2_set = 1529, inject_way = 0
+                # LZO (test!): inject_cycles = 51000, inject_l2_set = 1056
+                inject_cycles = 12080
+                inject_l2_set = 1529
+                inject_way = 0
+                # NORMAL CODE
+                # inject_cycles = injection.time
+                # inject_l2_set = int(injection.register[-4:])
+                # way_impacted = int(injection.field[-1:]) # TODO: limits to a 1 digit number of ways
 
-                # candidates = self.PrevAccess(sql_db, injection.time, cache_set, ways)
-                # Candidates are the addresses of the data in the cache shifted to remove the byte offset
+                # PrevAccess: returns up to N unique word addresss to l2_set prior to inject_cycles
+                candidate_words = self.PrevAccess(sql_db, inject_cycles, inject_l2_set, ways)
+
+                # Candidate_words are the addresses of the word into which the fault may be injected.
+                #   This addresses are a byte address shifted to remove the byte offset
                 #   Since there are 32 bytes in each cache line, that means >> 5
-                #   TODO: Make sure byte addressable and not word addressable.
 
-                print("Candidate addresses for the injection!: ", candidates)
+                print("Candidate word addresses for the injection!: ", candidate_words)
 
-                # Parse from injection.field: 84   data_2   cacheline_1455
-                # TODO: limits to a 1 digit number of ways
-                way_impacted = 0 # TEST CODE
-                # way_impacted = int(injection.field[-1:])
-
-                if way_impacted >= len(candidates):
+                if inject_way >= len(candidate_words):
                     print("No fault injected: cache line was not valid.")
                     # TODO: How to return from this?
                     return None, None, False, False
 
-                # target picked, so now need all following accesses (until a store or slow load)
-                # For out example (way 0 of cache line 1531 at cycle 30500, address 1097584 for fib_short):
-                #   SELECT * FROM ls_inst WHERE L2_set = 1531 AND l_s_addr = 1097584 AND cycles_t > 30500;
-                #   30586|14|1055908|0|1097584|LDM|1531
-                #   31133|13|1055900|1|1097584|STM|1531 <- don't return... signals end.
+                # target picked, so now need all accesses to the word (load and store)
 
-                # LZO example:
-                # sqlite> SELECT * FROM ls_inst WHERE L2_set = 1056 AND l_s_addr = 1147908;
-                # 58607|14|1061604|1|1147908|STR|1056
-                # 357818|14|1050984|0|1147908|LDR|1056
-                # 388511|14|1053628|0|1147908|LDR|1056
-
-                #injection_targets = sql_db.NextLdrStr(cycle, cache_set, (candidates[way_impacted] << 5) + injection.bit)
-                # FIB_SHORT: injection_targets = sql_db.NextLdrStr(1000, 1536, (candidates[way_impacted] << 5) + 16) # TEST CODE
-                # LZO:
-                injection_targets = sql_db.NextLdrStr(51000, 1056, (candidates[way_impacted] << 5) + 16) # TEST CODE
+                # TODO: From here
+                target_address = candidate_words[inject_way] << 5) + injection.bit
+                injection_targets = self.NextAccess(sql_db, inject_cycles, target_address, ways)
                 print("Injection targets: ", injection_targets)
+
+                # TODO: Test previous function and then from here.
 
                 if (len(injection_targets) == 0):
                     print("No Fault injected: value in cache never read.")

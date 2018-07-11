@@ -302,15 +302,18 @@ class sqlite_database(object):
         # TODO: Use the address to figure out the number of times you need to break first.
         return (address, 1)
 
-    # Given a cycle count, cache set, and address (with byte offset; this is the target word) for the impacted way
-    # return the list of accesses up until the first store or slow load
+    # Given a cycle count, cache set, and target address for the impacted way
+    # return the list of accesses up until the first store or missed load
+    #   include the first store if the store address is NOT to the address (but word matches)
+    # TODO: May return more information if needed
+    # Returns the cycle count and inst address for each injection target
     def NextLdrStr(self, cycle, cache_set, address):
         print("Get the next stores / loads for %d / %d after cycle %d" % (cache_set, address, cycle))
 
         conn = connect(self.database)
         c = conn.cursor()
 
-        c.execute("SELECT * FROM ls_inst WHERE cycles_t > {} AND L2_set = {} AND l_s_addr = {} ORDER BY cycles_t ASC". format(cycle, cache_set, address))
+        c.execute("SELECT cycles_t, address, load0_store1, l_s_addr, L2CC_look_d, L2CC_hit_d, instruction FROM ls_inst WHERE cycles_t > {} AND L2_set = {} AND l_s_addr >> 5 = {} ORDER BY cycles_t ASC". format(cycle, cache_set, address >> 5))
         retval = c.fetchall()
         if retval == None:
             return None
@@ -318,22 +321,42 @@ class sqlite_database(object):
         targets = []
         for possible in retval:
             print ("Hey, look here!: ", possible)
+            cycles = possible[0]
+            inst_address = possible[1]
+            load0_store1 = possible[2]
+            l_s_addr = possible[3]
+            l2cc_look_d = possible[4]
+            l2cc_hit_d = possible[5]
 
-            if (possible[3] == 1):
-                # It's a store. Return
-                return targets
-            elif (possible[1] > 30): # TODO: Hard coded cycle time here
-                # it's a load, but from backing memory
-                print("*****************************")
-                print("* Load from backing memory! *")
-                print("*****************************")
+            if (possible[1] == 1):
+                # It's a store. Add to targets if address doesn't match
+                # TODO: How to deal with STM?
+                if (l_s_addr == address):
+                    pass
+                else:
+                    # A store will write the whole word to backing memory, including the faulty bit
+                    targets.append([cycles, inst_address])
                 return targets
             else:
-                # Load from cache, so an actual target
-                print("*****************************")
-                print("* Load from target cache!   *")
-                print("*****************************")
-                targets.append([possible[0], possible[2]])
+                # It's a Load to the target word
+                if ((l2cc_look_d - l2cc_hit_d) > 0):
+                    # it's a load, but a miss according to l2cc counters
+                    # A load to the target word that misses causes a refill from backing memory
+                    print("*****************************")
+                    print("* Load from backing memory! *")
+                    print("*****************************")
+                    return targets
+                else:
+                    # Load from cache, so an actual target
+                    # Check to see if the address matches to inject a fault (not just the word)
+                    print("********************************")
+                    print("* Load from target cache word! *")
+                    print("********************************")
+                    if (l_s_addr == address):
+                        print("\tAddresses match. Adding to targets.")
+                        targets.append([cycles, inst_address]) # TODO: WHAT ARE THESE NOW? cycles... address?
+                    else:
+                        print("\tAddresses do not match. Ignore.")
 
         return targets
 
