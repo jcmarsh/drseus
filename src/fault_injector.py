@@ -11,7 +11,6 @@ from .error import DrSEUsError
 from .jtag.bdi import bdi
 from .jtag.dummy import dummy
 from .jtag.openocd import openocd
-from .simics import simics
 from .sqlite_database import sqlite_database, print_sqlite_database, assembly_golden_run, record_tags, get_database_path
 
 class fault_injector(object):
@@ -19,18 +18,13 @@ class fault_injector(object):
         self.options = options
         self.bbzybo  = 1
         self.db = database(options)
-        if self.db.campaign.simics and self.db.campaign.architecture in \
-                ['a9', 'p2020']:
-            self.debugger = simics(self.db, options)
-        elif options.jtag and self.db.campaign.architecture == 'a9':
+
+        if options.jtag and self.db.campaign.architecture == 'a9':
             self.debugger = openocd(self.db, options, power_switch)
         elif options.jtag and self.db.campaign.architecture == 'p2020':
             self.debugger = bdi(self.db, options)
         else:
             self.debugger = dummy(self.db, options, power_switch)
-        if self.db.campaign.aux and not self.db.campaign.simics:
-            self.debugger.aux.write('\x03')
-            self.debugger.aux.do_login()
 
     def __str__(self):
         string = 'DrSEUs Attributes:\n\tDebugger: {}\n\tDUT:\t{}'.format(
@@ -48,9 +42,6 @@ class fault_injector(object):
                     self.db.campaign.aux_command)
             string += '\n\t\tExecution Time: {} seconds'.format(
                 self.db.campaign.execution_time)
-            if self.db.campaign.simics:
-                string += '\n\t\tExecution Cycles: {:,}\n'.format(
-                    self.db.campaign.cycles)
         return string
 
     def close(self, log=True):
@@ -58,8 +49,6 @@ class fault_injector(object):
         if log and self.db.result is not None:
             result_items = self.db.result.event_set.count()
             result_items += self.db.result.injection_set.count()
-            result_items += self.db.result.simics_memory_diff_set.count()
-            result_items += self.db.result.simics_register_diff_set.count()
             if result_items or self.db.result.dut_output or \
                     self.db.result.aux_output or self.db.result.debugger_output:
                 if self.db.result.outcome == 'In progress':
@@ -82,11 +71,7 @@ class fault_injector(object):
                     if self.db.campaign.aux:
                         self.debugger.aux.write('{}\n'.format(
                             self.db.campaign.aux_command))
-                    if self.db.campaign.simics:
-                        self.debugger.halt_dut()
-                        start = self.debugger.get_time()
-                    else:
-                        self.debugger.dut.reset_timer()
+                    self.debugger.dut.reset_timer()
                     # Starts run
                     if self.bbzybo:
                         record_tags(self.options.cache_sqlite)
@@ -110,8 +95,6 @@ class fault_injector(object):
                     else:
                         self.debugger.dut.write('{}\n'.format(
                             self.db.campaign.command))
-                    if self.db.campaign.simics:
-                        self.debugger.continue_dut()
                     if self.db.campaign.kill_dut:
                         self.debugger.aux.read_until()
                         self.debugger.dut.write('\x03')
@@ -125,15 +108,8 @@ class fault_injector(object):
                         self.debugger.aux.read_until()
                     else:
                         self.debugger.dut.read_until()
-                    if self.db.campaign.simics:
-                        self.debugger.halt_dut()
-                        end = self.debugger.get_time()
-                        execution_cycles.append(end[0] - start[0])
-                        execution_times.append(end[1] - start[1])
-                        self.debugger.continue_dut()
-                    else:
-                        execution_times.append(
-                            self.debugger.dut.get_timer_value())
+                    execution_times.append(
+                        self.debugger.dut.get_timer_value())
                     if i < self.options.iterations-1:
                         if self.db.campaign.output_file:
                             if self.db.campaign.aux_output_file:
@@ -151,32 +127,21 @@ class fault_injector(object):
                                 if not log_file.startswith('/'):
                                     self.debugger.aux.command(
                                         'rm {}'.format(log_file))
-                if self.db.campaign.simics:
-                    self.debugger.halt_dut()
-                    end_cycles, end_time = self.debugger.get_time()
-                    self.db.campaign.start_cycle = end_cycles
-                    self.db.campaign.start_time = end_time
-                    self.db.campaign.cycles = \
-                        int(sum(execution_cycles) / len(execution_cycles))
                 self.db.campaign.execution_time = \
                     sum(execution_times) / len(execution_times)
                 event.success = True
                 event.timestamp = datetime.now()
                 event.save()
-                if self.db.campaign.simics:
-                    self.debugger.create_checkpoints()
 
     # def setup_campaign(self):
-        if self.db.campaign.command or self.db.campaign.simics:
-            if self.db.campaign.simics:
-                self.debugger.launch_simics()
+        if self.db.campaign.command:
             print("\tResetting DUT")
             self.debugger.reset_dut()
             print("\tDone Resetting DUT")
             print("\tTiming application")
             time_application()
             print("\tDone timing application")
-        if not self.db.campaign.command:
+        else:
             self.db.campaign.execution_time = self.options.delay
             sleep(self.db.campaign.execution_time)
         gold_folder = 'campaign-data/{}/gold'.format(self.db.campaign.id)
@@ -239,33 +204,9 @@ class fault_injector(object):
                     global incomplete
                     incomplete = False
                     if log_time:
-                        if self.db.campaign.simics:
-                            try:
-                                self.debugger.halt_dut()
-                            except DrSEUsError as error:
-                                self.db.result.outcome_category = 'Simics error'
-                                self.db.result.outcome = error.type
-                            else:
-                                try:
-                                    end_cycles, end_time = \
-                                        self.debugger.get_time()
-                                except DrSEUsError as error:
-                                    self.db.result.outcome_category = \
-                                        'Simics error'
-                                    self.db.result.outcome = error.type
-                                else:
-                                    self.db.result.cycles = \
-                                        end_cycles-self.db.campaign.start_cycle
-                                    self.db.result.execution_time = (
-                                        end_time - self.db.campaign.start_time)
-                                self.debugger.continue_dut()
-                        else:
-                            self.db.result.execution_time = \
-                                self.debugger.dut.get_timer_value()
-            if self.db.campaign.output_file and \
-                    self.db.result.outcome == 'In progress':
-                if hasattr(self.debugger, 'aux') and \
-                        self.db.campaign.aux_output_file:
+                        self.db.result.execution_time = self.debugger.dut.get_timer_value()
+            if self.db.campaign.output_file and self.db.result.outcome == 'In progress':
+                if hasattr(self.debugger, 'aux') and self.db.campaign.aux_output_file:
                     self.debugger.aux.check_output()
                 else:
                     self.debugger.dut.check_output()
@@ -285,9 +226,7 @@ class fault_injector(object):
 
         def check_latent_faults():
             for i in range(1, self.options.latent_iterations+1):
-                if self.db.result.outcome == 'Latent faults' or \
-                    (not self.db.campaign.simics and
-                        self.db.result.outcome == 'Masked faults'):
+                if self.db.result.outcome == 'Latent faults' or self.db.result.outcome == 'Masked faults':
                     if self.db.campaign.aux:
                         self.db.log_event(
                             'Information', 'AUX', 'Command',
@@ -345,27 +284,27 @@ class fault_injector(object):
                             break
                 print("Remaining iterations: " + str(iteration_counter.value))
                 self.db.result.num_injections = self.options.injections
-                if not self.db.campaign.simics:
-                    if self.options.command == 'inject':
-                        if reset_next_run:
-                            try:
-                                # Reset the DUT. reset_dut calls reboot.sh
-                                self.debugger.reset_dut()
-                            except DrSEUsError as error:
-                                self.db.result.outcome_category = 'Debugger error'
-                                self.db.result.outcome = str(error)
-                                self.db.log_result()
-                                continue
-                    if self.db.campaign.aux:
-                        self.db.log_event(
-                            'Information', 'AUX', 'Command',
-                            self.db.campaign.aux_command)
-                        self.debugger.aux.write('{}\n'.format(
-                            self.db.campaign.aux_command))
+
+                if self.options.command == 'inject':
+                    if reset_next_run:
+                        try:
+                            # Reset the DUT. reset_dut calls reboot.sh
+                            self.debugger.reset_dut()
+                        except DrSEUsError as error:
+                            self.db.result.outcome_category = 'Debugger error'
+                            self.db.result.outcome = str(error)
+                            self.db.log_result()
+                            continue
+                if self.db.campaign.aux:
                     self.db.log_event(
-                        'Information', 'DUT', 'Command',
-                        self.db.campaign.command)
-                    self.debugger.dut.reset_timer()
+                        'Information', 'AUX', 'Command',
+                        self.db.campaign.aux_command)
+                    self.debugger.aux.write('{}\n'.format(
+                        self.db.campaign.aux_command))
+                self.db.log_event(
+                    'Information', 'DUT', 'Command',
+                    self.db.campaign.command)
+                self.debugger.dut.reset_timer()
                 start = perf_counter()
                 global incomplete
                 incomplete = True
@@ -377,53 +316,27 @@ class fault_injector(object):
                         log_thread.start()
                 except DrSEUsError as error:
                     self.db.result.outcome = str(error)
-                    if self.db.campaign.simics:
-                        self.db.result.outcome_category = 'Simics error'
-                    else:
-                        self.db.result.outcome_category = 'Debugger error'
-                        try:
-                            self.debugger.continue_dut()
-                            if self.db.campaign.aux:
-                                aux_process = Thread(
-                                    target=self.debugger.aux.read_until,
-                                    kwargs={'flush': False})
-                                aux_process.start()
-                            self.debugger.dut.read_until(flush=False)
-                            if self.db.campaign.aux:
-                                aux_process.join()
-                        except DrSEUsError:
-                            pass
-                else:
-                    if not self.db.campaign.command:
-                        sleep_time = (self.db.campaign.execution_time -
-                                      (perf_counter()-start))
-                        if sleep_time > 0:
-                            sleep(sleep_time)
-                    monitor_execution(persistent_faults, True)
-                    incomplete = False
-                    if self.options.log_delay is not None:
-                        log_thread.join()
-                    check_latent_faults()
-                if self.db.campaign.simics:
+                    self.db.result.outcome_category = 'Debugger error'
                     try:
-                        self.debugger.close()
-                    except DrSEUsError as error:
-                        self.db.result.outcome_category = 'Simics error'
-                        self.db.result.outcome = str(error)
-                    finally:
-                        rmtree('simics-workspace/injected-checkpoints/{}/{}'
-                               ''.format(self.db.campaign.id,
-                                         self.db.result.id))
-                else:
-                    try:
-                        self.debugger.dut.flush(check_errors=True)
-                    except DrSEUsError as error:
-                        self.db.result.outcome_category = \
-                            'Post execution error'
-                        self.db.result.outcome = error.type
-                    if self.db.campaign.aux:
-                        self.debugger.aux.flush()
-                self.db.log_result()
+                        self.debugger.continue_dut()
+                        if self.db.campaign.aux:
+                            aux_process = Thread(
+                                target=self.debugger.aux.read_until,
+                                kwargs={'flush': False})
+                            aux_process.start()
+                        self.debugger.dut.read_until(flush=False)
+                        if self.db.campaign.aux:
+                            aux_process.join()
+                    except DrSEUsError:
+                        pass
+                try:
+                    self.debugger.dut.flush(check_errors=True)
+                except DrSEUsError as error:
+                    self.db.result.outcome_category = 'Post execution error'
+                    self.db.result.outcome = error.type
+                if self.db.campaign.aux:
+                    self.debugger.aux.flush()
+            self.db.log_result()
             if self.options.command == 'inject':
                 self.close()
             elif self.options.command == 'supervise':
@@ -443,8 +356,6 @@ class fault_injector(object):
             self.db.result.save()
             self.db.log_event(
                 'Information', 'User', 'Interrupted', self.db.log_exception)
-            if self.db.campaign.simics:
-                self.debugger.continue_dut()
             self.debugger.dut.write('\x03')
             if self.db.campaign.aux:
                 self.debugger.aux.write('\x03')
