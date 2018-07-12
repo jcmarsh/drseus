@@ -222,19 +222,20 @@ class jtag(object):
                 # Select the desired cache line (injection.bit / injection.field)
                 # From the stopping time, find all future reads and writes
 
-                print("Is cache_set being set for the cache? ", cache_set)
                 ways = 8 # TODO: Hardcoding for L2 cache
 
                 # TEST CODE
                 # FIB_SHORT (test!): inject_cycles = 1000, inject_l2_set = 1536
-                # FIB_REC (l7_665): inject_cycles = 12080, inject_l2_set = 1529, inject_way = 0
+                # FIB_REC (l7_665): inject_cycles = 12080, inject_l2_set = 1529, inject_offset = 20, inject_way = 0
                 # LZO (test!): inject_cycles = 51000, inject_l2_set = 1056
                 inject_cycles = 12080
                 inject_l2_set = 1529
+                inject_offset = 20 # the 20th byte of the cache line
                 inject_way = 0
                 # NORMAL CODE
                 # inject_cycles = injection.time
                 # inject_l2_set = int(injection.register[-4:])
+                # inject_offset = injection.bit >> 3 # offset is in bytes, not bits
                 # way_impacted = int(injection.field[-1:]) # TODO: limits to a 1 digit number of ways
 
                 # PrevAccess: returns up to N unique word addresss to l2_set prior to inject_cycles
@@ -245,6 +246,8 @@ class jtag(object):
                 #   Since there are 32 bytes in each cache line, that means >> 5
 
                 print("Candidate word addresses for the injection!: ", candidate_words)
+                print("\tAddress construction: candidate_word (includes l2_set) + inject_offset)")
+                print("\t %X (%X) + %X" % (candidate_words[0] << 5, inject_l2_set << 5, injection.bit >> 3))
 
                 if inject_way >= len(candidate_words):
                     print("No fault injected: cache line was not valid.")
@@ -254,8 +257,8 @@ class jtag(object):
                 # target picked, so now need all accesses to the word (load and store)
 
                 # TODO: From here
-                target_address = candidate_words[inject_way] << 5) + injection.bit
-                injection_targets = self.NextAccess(sql_db, inject_cycles, target_address, ways)
+                target_address = (candidate_words[inject_way] << 5) + inject_offset
+                injection_targets = sql_db.NextLdrStr(inject_cycles, inject_l2_set, target_address)
                 print("Injection targets: ", injection_targets)
 
                 # TODO: Test previous function and then from here.

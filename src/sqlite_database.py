@@ -328,7 +328,7 @@ class sqlite_database(object):
             l2cc_look_d = possible[4]
             l2cc_hit_d = possible[5]
 
-            if (possible[1] == 1):
+            if (load0_store1 == 1):
                 # It's a store. Add to targets if address doesn't match
                 # TODO: How to deal with STM?
                 if (l_s_addr == address):
