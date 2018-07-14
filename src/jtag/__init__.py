@@ -306,7 +306,7 @@ class jtag(object):
                     if not "LD" in instruction:
                         print("YOU SHOULD ONLY BE LOOKING AT LOADS!")
                     # find target
-                    target_reg = (target_reg.split())[3][:3]
+                    target_reg = (target_reg.split())[3].strip().strip(',')
                     if target_reg == 'r13':
                         target_reg = 'sp'
                     if target_reg == 'r14':
@@ -331,20 +331,23 @@ class jtag(object):
                         inject_value = inject_value ^ (1 << (injection.bit % 32)) # mod 32 for size of registers (injection.bit is for the whole cache line)
                         injection.injected_value = inject_value # TODO: Could clean up
                         print("inject_value: ", hex(inject_value))
+
                     # inject "inject value" in target register
                     self.command(command = 'reg %s 0x%s' % (target_reg, hex(inject_value)), #error_message = 'Failed to inject fault in register')
                                  # expected_output = '%s (/32): 0x%s' % (target_reg, hex(inject_value)),
                                  error_message = 'Failed to inject fault in register%s' % (target_reg))
                     print("Did that bloody work?")
 
-                    self.command(command = 'resume', error_message = "Failed to resume")
-
                     # injection.save()? injection.success, set_register_value... makes sense to write new functions or modify?
 
                     prev_cycle = target[0]
 
+                self.command(command = 'resume', error_message = "Failed to resume")
+
                 # All faults should have now been injected
+                # TODO: What is this return? num_register_diffs, num_memory_diffs?
                 return None, None, False, True
+            # END OF - if (injection.target == 'CACHE_L2'):
 
             # Needs to have processor halted at correct point here.
             previous_injection_time = injection.time
