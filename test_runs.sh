@@ -8,3 +8,6 @@
 
 # Runs a campaign with n injection iteration using p processes with debug turned on
 #./drseus.py --timeout 10 --serial /dev/ttyUSBzybo --prompt safeword inject -n 250 -i 1 -p 1 -T 0 -l 0 --debug
+
+# Latest test on Fib_rec:
+# ./python/bin/python3 drseus.py --serial /dev/ttyUSBzybo --prompt safeword --jtag_ip localhost --timeout 300 -c 665 inject -n 5
