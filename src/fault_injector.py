@@ -71,26 +71,29 @@ class fault_injector(object):
                     if self.db.campaign.aux:
                         self.debugger.aux.write('{}\n'.format(
                             self.db.campaign.aux_command))
-                    self.debugger.dut.reset_timer()
+                    self.debugger.dut.reset_timer() # TODO reset later!
                     # Starts run
                     if self.bbzybo:
                         record_tags(self.options.cache_sqlite)
-                        #self.debugger.start_dut()
                         print("Breaking on", self.options.cache_sqlite.get_start_addr())
-                        self.debugger.break_dut(hex(self.options.cache_sqlite.get_start_addr()))
+                        self.debugger.break_dut_after(hex(self.options.cache_sqlite.get_start_addr()), 1)
                         start_cycle = self.debugger.check_cycles()
+
                         print("Breaking on", self.options.cache_sqlite.get_end_addr())
-                        self.debugger.break_dut(hex(self.options.cache_sqlite.get_end_addr()))
+                        self.debugger.break_dut_after(hex(self.options.cache_sqlite.get_end_addr()), 1)
                         end_cycle = self.debugger.check_cycles()
                         print("Raw cycles: ", start_cycle, end_cycle)
                         # Cortex-A9 PMCCNTR has two modes, use this to convert if counting 1 per 64 cycles (instead of 1 to 1)
-                        # Start cycle is read before changing granularities
-                        # start_cycle = start_cycle * 64 # beginning will underestimated
-                        # end_cycle = end_cycle * 64 + 64 # ending will be overestimated
-                        end_cycle = start_cycle + ((end_cycle - start_cycle) * 64) # when run, cycle granularity will be x64 for the first reading, 1x after that.
+                        start_cycle = start_cycle * 64 # beginning will underestimated
+                        end_cycle = end_cycle * 64 + 64 # ending will be overestimated
+
                         print("Start and end convert: ", start_cycle, end_cycle)
                         print("Diff: ", end_cycle - start_cycle)
-                        self.debugger.start_dut()
+
+                        # Resume dut and reset the timer
+                        self.debugger.continue_dut()
+
+                        # TODO: consider soft reset here? or see next TODO
                         self.options.cache_sqlite.log_start_end(start_cycle, end_cycle)
                     else:
                         self.debugger.dut.write('{}\n'.format(
@@ -107,6 +110,7 @@ class fault_injector(object):
                         self.debugger.dut.read_until()
                         self.debugger.aux.read_until()
                     else:
+                        # TODO: Should the application timing be done here? reset time, reset board..
                         self.debugger.dut.read_until()
                     execution_times.append(
                         self.debugger.dut.get_timer_value())
@@ -135,9 +139,6 @@ class fault_injector(object):
 
     # def setup_campaign(self):
         if self.db.campaign.command:
-            print("\tResetting DUT")
-            self.debugger.reset_dut()
-            print("\tDone Resetting DUT")
             print("\tTiming application")
             time_application()
             print("\tDone timing application")
@@ -238,7 +239,7 @@ class fault_injector(object):
                         self.debugger.aux.write('{}\n'.format(
                             self.db.campaign.aux_command))
                     if self.bbzybo:
-                        self.debugger.start_dut()
+                        self.debugger.start_dut() # TODO: Remove / fix
                     else:
                         self.debugger.dut.write('{}\n'.format(
                             self.db.campaign.command))

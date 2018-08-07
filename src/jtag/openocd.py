@@ -109,11 +109,14 @@ class openocd(jtag):
 
     # TODO: Consider changing these to use the command function in super (__init__.py)
     def start_dut(self):
+        print("DON'T USE THIS FUNCTION!!!!")
+        print("REALLY, WHAT ARE YOU DOING?")
         self.telnet.write(bytes('halt\n', encoding='utf-8'))
         self.telnet.write(bytes('resume 0x00100000\n', encoding='utf-8'))
 
     # Restarts the program from the beginning, halts as specified address
     def break_dut(self, address):
+        print("Pretty sure that this function (break_dut) should not be used")
         self.telnet.write(bytes('halt\n', encoding='utf-8'))
         self.telnet.write(bytes('bp ' + address + ' 1 hw\n', encoding='utf-8'))
         self.telnet.write(bytes('resume 0x00100000\n', encoding='utf-8'))
@@ -150,7 +153,6 @@ class openocd(jtag):
             retval = self.telnet.read_some()
             print("Returned 1?: ", retval)
             retval = retval.decode('ascii')
-
 
             if retval is '':
                 print("Trying check_cycles again (null)")
@@ -190,7 +192,7 @@ class openocd(jtag):
             sleep(1)
 
             # Reupload to zybo board with xsdb
-            p = subprocess.Popen("xsdb ./instr_nostart.xsdb", cwd="../jtag_eval/xsdb/", shell=True)
+            p = subprocess.Popen("xsdb ./instr_stop.xsdb", cwd="../jtag_eval/xsdb/", shell=True)
             p.communicate()
 
             sleep(2)

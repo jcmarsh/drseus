@@ -302,6 +302,7 @@ class jtag(object):
                     # read instruction
                     target_reg = self.command(command = 'arm disassemble %s' % (program_counter), error_message = 'You have done it now.')
                     print("Target Reg: ", target_reg)
+                    # TODO: Need to deal with coprocessor targets here.
                     instruction = (target_reg.split())[2]
                     if not "LD" in instruction:
                         print("YOU SHOULD ONLY BE LOOKING AT LOADS!")
