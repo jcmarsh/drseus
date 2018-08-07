@@ -171,6 +171,35 @@ class openocd(jtag):
         return retval
         # print("Returned?\n", self.telnet.read_some())
 
+    def reset_cycles(self):
+        self.telnet.write(bytes('arm mcr 15 0 9 12 0\n', encoding='utf-8'))
+        # If you comment out this print, you must keep the call to read_until()
+        print("Returned 0?\n", self.telnet.read_until(b"arm mcr 15 0 9 12 0\r\n"))
+        while True:
+            retval = self.telnet.read_some()
+            print("Returned 1?: ", retval)
+            retval = retval.decode('ascii')
+
+            if retval is '':
+                print("Trying check_cycles again (null)")
+                retval = self.telnet.read_some()
+            elif 'Timeout' in retval:
+                print("Taking too long. Try again")
+                retval = self.telnet.read_some()
+            else:
+                try:
+                    retval = int(retval.strip().strip('>').strip('\r').strip('\n').strip('\r'))
+                    break
+                except ValueError:
+                    print("Parsing cycles failed\n")
+
+        retval = retval | 0x4
+        print("Reseting cycle counter by writing %d" % (retval))
+        self.telnet.write(bytes('arm mrc 15 0 9 12 0 %d\n' % (retval), encoding='utf-8'))
+        print("Returned?\n", self.telnet.read_until(b"arm mrc 15 0 9 12 0 %d\r\n" % (retval)))
+        return retval
+        # print("Returned?\n", self.telnet.read_some())
+
     def reset_dut(self, attempts=10):
         if self.power_switch:
             try:
