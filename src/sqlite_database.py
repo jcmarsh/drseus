@@ -257,6 +257,12 @@ class sqlite_database(object):
                     c22=self.PMU_c6_t_col, t22=self.PMU_c6_t_type,\
                     c23=self.PMU_c6_d_col, t23=self.PMU_c6_d_type))
 
+        # Add indexed columns
+        # CREATE INDEX idx_cycles_t ON ls_inst (cycles_t);
+        c.execute('CREATE INDEX idx_{c1} ON {tn} ({c1})'.format(tn=self.ldstr_inst_tbl, c1=self.cycles_total_col))
+        # CREATE INDEX idx_l_s_addr ON ls_inst (l_s_addr);
+        c.execute('CREATE INDEX idx_{c1} ON {tn} ({c1})'.format(tn=self.ldstr_inst_tbl, c1=self.ldstr_addr_col))
+
         c.execute('CREATE TABLE {tn} ({c1} {t1} PRIMARY KEY, {c2} {t2}, {c3} {t3}, {c4} {t4}, {c5} {t5})'\
             .format(tn=self.inject_tbl,\
                     c1=self.id_col, t1=self.id_type,\
