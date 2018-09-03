@@ -294,6 +294,7 @@ class fault_injector(object):
                         try:
                             # Reset the DUT. reset_dut calls reboot.sh
                             self.debugger.reset_dut()
+                            # TODO: What location?
                         except DrSEUsError as error:
                             self.db.result.outcome_category = 'Debugger error'
                             self.db.result.outcome = str(error)
@@ -315,6 +316,7 @@ class fault_injector(object):
                 log_thread = Thread(target=background_log)
                 try:
                     # Run the program while injected some number of faults
+                    # TODO: What state is the dut in before and after?
                     (self.db.result.num_register_diffs, self.db.result.num_memory_diffs, persistent_faults, reset_next_run) = self.debugger.inject_faults(sql_db)
                     if self.options.log_delay is not None:
                         log_thread.start()

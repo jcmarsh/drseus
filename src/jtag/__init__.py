@@ -1,3 +1,5 @@
+import configparser
+
 from pyudev import Context
 from random import uniform
 from socket import AF_INET, SOCK_STREAM, socket
@@ -209,7 +211,9 @@ class jtag(object):
         if self.db.campaign.command:
             # TODO: Needs to deal with timing better, at least for cache.
             print("**** It's an injection start ****")
-            self.start_dut()
+            # TODO: Better manage the dut state. At this point, it has been programmed. Only bring to start if an injection is going to be done. End of function calls continue dut.
+            print("Start Address: ", hex(sql_db.get_start_addr()))
+            self.break_dut_after(hex(sql_db.get_start_addr()), 1)
         previous_injection_time = 0
 
         # Perform the injections
@@ -224,14 +228,23 @@ class jtag(object):
 
                 ways = 8 # TODO: Hardcoding for L2 cache
 
+                # TEST CODE: Load a file, read variables (hardcode filename?)
                 # TEST CODE
                 # FIB_SHORT (test!): inject_cycles = 1000, inject_l2_set = 1536
                 # FIB_REC (l7_665): inject_cycles = 12080, inject_l2_set = 1529, inject_offset = 20, inject_way = 0
                 # LZO (test!): inject_cycles = 51000, inject_l2_set = 1056
-                inject_cycles = 12080
-                inject_l2_set = 1529
-                inject_offset = 20 # the 20th byte of the cache line
-                inject_way = 0
+                print("!!!!TEST INJECTION CODE!!!!")
+                inject_config_fn = "./src/jtag/test_injections/fib_rec_injection_test_0.ini"
+                my_config = configparser.ConfigParser()
+                my_config.readfp(open(inject_config_fn))
+
+                inject_cycles=int(my_config.get("target",  "inject_cycles"))
+                inject_l2_set=int(my_config.get("target",  "inject_l2_set"))
+                inject_offset=int(my_config.get("target",  "inject_offset"))
+                inject_way=int(my_config.get("target",  "inject_way"))
+
+                print(inject_config_fn, inject_cycles, inject_l2_set, inject_offset, inject_way)
+
                 # NORMAL CODE
                 # inject_cycles = injection.time
                 # inject_l2_set = int(injection.register[-4:])
