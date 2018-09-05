@@ -273,7 +273,8 @@ class jtag(object):
                 # target picked, so now need all accesses to the word (load and store)
 
                 target_address = (candidate_words[inject_way] << 5) + inject_byte
-                # TODO: this function needs to be tested better
+                # TODO: this function needs to be tested better <- Is it returning matches for the exact address or the cache line with that address?
+                # NextLdrStr returns (cycle_t, instr_addr) for each following instruction that accesses the target cache line up until the first missed load or first store (the store is included if the line matches but address does not).
                 injection_targets = sql_db.NextLdrStr(inject_cycles, inject_l2_set, target_address)
                 print("Injection targets: ", injection_targets)
 
@@ -292,25 +293,60 @@ class jtag(object):
                     skip_count = sql_db.SkipCount(prev_cycle, target[0], target[1])
                     prev_cycle = target[0]
 
-                    print("Break address: %X\tSkip Count: %d" % (injection_targets[0][1], skip_count))
+                    print("Break address: %X\tSkip Count: %d" % (target[1], skip_count))
                     # Get the DUT to the correct location
                     self.break_dut_after(str(target[1]), skip_count) # runs current, Removes breakpoint.
-
-                    # TODO: From here
 
                     # TODO: The target register should really be part of the database
                     # Check program counter
                     program_counter = self.command(command = 'reg pc', error_message = 'Oh boffins!')
-                    print("PC: ", program_counter)
+                    # print("PC: ", program_counter)
                     program_counter = (program_counter.split())[2]
                     print("PC: ", program_counter)
                     # read instruction
                     target_reg = self.command(command = 'arm disassemble %s' % (program_counter), error_message = 'You have done it now.')
-                    print("Target Reg: ", target_reg)
+                    print("Target Instruction: ", target_reg)
                     # TODO: Need to deal with coprocessor targets here.
                     instruction = (target_reg.split())[2]
-                    if not "LD" in instruction:
-                        print("YOU SHOULD ONLY BE LOOKING AT LOADS!")
+                    # TODO: Change to case?
+                    if "LDR" in instruction:
+                        # TODO: Deal with LDR
+                        print("Inject into LDR", instruction)
+
+                    elif "LDM" in instruction:
+                        # TODO: Deal with LDM
+                        print("Inject into LDM", instruction)
+
+                    elif "LDCL" in instruction:
+                        # TODO: Deal with LDCL
+                        print("Inject into LDCL", instruction)
+
+                    elif "LDC" in instruction:
+                        # TODO: Deal with LDC
+                        print("Inject into LDC", instruction)
+
+                    elif "STR" in instruction:
+                        # TODO: For stores, may need to inject fault on the saved memory. NextLdrStr only returns stores if the line matches but not the address
+                        print("Inject into STR", instruction)
+
+                    elif "STM" in instruction:
+                        # TODO: Deal with STM
+                        print("Inject into STM", instruction)
+
+                    elif "STCL" in instruction:
+                        # TODO: Not sure if this needs to be dealt with... but maybe as above
+                        print("Inject into STCL", instruction)
+
+                    elif "STC" in instruction:
+                        # TODO: Same as STCL
+                        print("Inject into STC", instruction)
+
+
+                    # TODO: I'm still not sure if I'm dealing with the target address vs inject byte (byte address vs cache line (target word?))
+                    # TODO: Move to function? Need to fit into elifs above
+                    # input - target_reg, inject_value, inject_byte, inject_bit, injection (to set gold, inject_value)
+                    # return - inject_value
+
                     # find target
                     target_reg = (target_reg.split())[3].strip().strip(',')
                     if target_reg == 'r13':
@@ -327,14 +363,15 @@ class jtag(object):
                     if inject_value == None:
                         # read value from target (set injection.gold_value?)
                         value = self.command(command = 'reg %s' % (target_reg), error_message = 'Could not read reg')
-                        print("inject value: ", value)
+                        # print("inject target: ", value)
                         value = (value.split())[2]
                         inject_value = int(value, 16)
-                        print("inject_value: ", hex(inject_value))
-                        # flip bit and save new value in inject_value
+                        print("gold_value: ", hex(inject_value))
                         injection.gold_value = inject_value
-                        print("Injection bit: ", injection.bit, " / ", injection.bit % 32)
-                        inject_value = inject_value ^ (1 << (injection.bit % 32)) # mod 32 for size of registers (injection.bit is for the whole cache line)
+
+                        # flip bit and save new value in inject_value
+                        print("Injection bit: ", (inject_byte << 3) % 32, " / ", inject_bit)
+                        inject_value = inject_value ^ (1 << (((inject_byte << 3) + inject_bit) % 32)) # mod 32 for size of registers (inject_byte is for the whole cache line)
                         injection.injected_value = inject_value # TODO: Could clean up
                         print("inject_value: ", hex(inject_value))
 
@@ -345,8 +382,7 @@ class jtag(object):
                     print("Did that bloody work?")
 
                     # injection.save()? injection.success, set_register_value... makes sense to write new functions or modify?
-
-                    prev_cycle = target[0]
+                    #############################
 
                 self.command(command = 'resume', error_message = "Failed to resume")
 
