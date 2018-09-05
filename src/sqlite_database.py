@@ -311,7 +311,6 @@ class sqlite_database(object):
     # Given a cycle count, cache set, and target address for the impacted way
     # return the list of accesses up until the first store or missed load
     #   include the first store if the store address is NOT to the address (but word matches)
-    # TODO: May return more information if needed
     # Returns the cycle count and inst address for each injection target
     def NextLdrStr(self, cycle, cache_set, address):
         print("Get the next stores / loads for %d / %d after cycle %d" % (cache_set, address, cycle))
@@ -360,7 +359,7 @@ class sqlite_database(object):
                     print("********************************")
                     if (l_s_addr == address):
                         print("\tAddresses match. Adding to targets.")
-                        targets.append([cycles, inst_address]) # TODO: WHAT ARE THESE NOW? cycles... address?
+                        targets.append([cycles, inst_address])
                     else:
                         print("\tAddresses do not match. Ignore.")
 

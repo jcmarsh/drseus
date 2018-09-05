@@ -130,7 +130,7 @@ class openocd(jtag):
         self.telnet.write(bytes('resume\n', encoding='utf-8'))
         self.telnet.read_until(b'target halted in ARM state due to breakpoint, current mode: System')
         breaks = breaks - 1
-        while (breaks > 0):
+        while (breaks >= 0):
             self.telnet.write(bytes('step\n', encoding='utf-8'))
             self.telnet.write(bytes('resume\n', encoding='utf-8'))
             self.telnet.read_until(b'target halted in ARM state due to breakpoint, current mode: System')

@@ -213,7 +213,7 @@ class jtag(object):
             print("**** It's an injection start ****")
             # TODO: Better manage the dut state. At this point, it has been programmed. Only bring to start if an injection is going to be done. End of function calls continue dut.
             print("Start Address: ", hex(sql_db.get_start_addr()))
-            self.break_dut_after(hex(sql_db.get_start_addr()), 1)
+            self.break_dut_after(hex(sql_db.get_start_addr()), 0) # Skip count is 0 (one bp, none skipped)
         previous_injection_time = 0
 
         # Perform the injections
@@ -229,29 +229,29 @@ class jtag(object):
                 ways = 8 # TODO: Hardcoding for L2 cache
 
                 # TEST CODE: Load a file, read variables (hardcode filename?)
-                # TEST CODE
-                # FIB_SHORT (test!): inject_cycles = 1000, inject_l2_set = 1536
-                # FIB_REC (l7_665): inject_cycles = 12080, inject_l2_set = 1529, inject_offset = 20, inject_way = 0
-                # LZO (test!): inject_cycles = 51000, inject_l2_set = 1056
                 print("!!!!TEST INJECTION CODE!!!!")
-                inject_config_fn = "./src/jtag/test_injections/fib_rec_injection_test_0.ini"
+                #inject_config_fn = "./src/jtag/test_injections/fib_rec_injection_test_0.ini"
+                inject_config_fn = "./src/jtag/test_injections/fib_rec_injection_test_1.ini"
                 my_config = configparser.ConfigParser()
                 my_config.readfp(open(inject_config_fn))
 
                 inject_cycles=int(my_config.get("target",  "inject_cycles"))
                 inject_l2_set=int(my_config.get("target",  "inject_l2_set"))
-                inject_offset=int(my_config.get("target",  "inject_offset"))
                 inject_way=int(my_config.get("target",  "inject_way"))
+                inject_byte=int(my_config.get("target",  "inject_byte"))
+                inject_bit=int(my_config.get("target", "inject_bit"))
 
-                print(inject_config_fn, inject_cycles, inject_l2_set, inject_offset, inject_way)
+                print(inject_config_fn, inject_cycles, inject_l2_set, inject_byte, inject_way)
 
                 # NORMAL CODE
                 # inject_cycles = injection.time
                 # inject_l2_set = int(injection.register[-4:])
-                # inject_offset = injection.bit >> 3 # offset is in bytes, not bits
-                # way_impacted = int(injection.field[-1:]) # TODO: limits to a 1 digit number of ways
+                # inject_way = int(injection.field[-1:]) # TODO: limits to a 1 digit number of ways
+                # inject_byte = injection.bit >> 3 # offset is in bytes, not bits
+                # inject_bit = injection.bit & 7
 
                 # PrevAccess: returns up to N unique word addresss to l2_set prior to inject_cycles
+                # TODO: Doesn't account for data that was loaded prior to run (but currently flushing right before run so that is okay.
                 candidate_words = self.PrevAccess(sql_db, inject_cycles, inject_l2_set, ways)
 
                 # Candidate_words are the addresses of the word into which the fault may be injected.
@@ -259,52 +259,44 @@ class jtag(object):
                 #   Since there are 32 bytes in each cache line, that means >> 5
 
                 print("Candidate word addresses for the injection!: ", candidate_words)
-                print("\tAddress construction: candidate_word (includes l2_set) + inject_offset)")
-                print("\t %X (%X) + %X" % (candidate_words[0] << 5, inject_l2_set << 5, injection.bit >> 3))
+                print("\tAddress construction: candidate_word (includes l2_set) + inject_byte)")
+                print("\t %X (%X)" % (candidate_words[inject_way] << 5, inject_l2_set << 5))
+                print("\t Byte address: %X (bit %X)"
+                      % ((candidate_words[inject_way] << 5) + inject_byte, inject_bit))
+                print("\t Word address: %X (bit %X)"
+                      % ((candidate_words[inject_way] << 5) + (inject_byte & 28), ((inject_byte & 3) << 3) + inject_bit))
 
                 if inject_way >= len(candidate_words):
                     print("No fault injected: cache line was not valid.")
-                    # TODO: How to return from this?
                     return None, None, False, False
 
                 # target picked, so now need all accesses to the word (load and store)
 
-                # TODO: From here
-                target_address = (candidate_words[inject_way] << 5) + inject_offset
+                target_address = (candidate_words[inject_way] << 5) + inject_byte
+                # TODO: this function needs to be tested better
                 injection_targets = sql_db.NextLdrStr(inject_cycles, inject_l2_set, target_address)
                 print("Injection targets: ", injection_targets)
 
-                # TODO: Test previous function and then from here.
-
                 if (len(injection_targets) == 0):
                     print("No Fault injected: value in cache never read.")
-                    # TODO: How to return from this?
                     return None, None, False, False
 
-                # Need advance the DUT to the first injection
-                # On first injection, figure out the corrupted bit
-                # On all injections, figure out the target and load the wrong value and continue.
-                #skip_count = sql_db.SkipCount(injection_cycle...?, address)
-                prev_cycle = injection_targets[0][0]
-                skip_count = sql_db.SkipCount(0, prev_cycle, injection_targets[0][1]) #, (candidates[way_impacted] << 5) + 16)
-                print("Skip Count! ", skip_count)
-
-                # Get the DUT to the correct location
-                start_addr = hex(sql_db.get_start_addr())
-                print("Run until start address: ", start_addr)
-                self.break_dut(start_addr) # Restart, run until start tag
-                self.break_dut_after(str(injection_targets[0][1]), skip_count) # runs current, Removes breakpoint.
-
+                prev_cycle = 0
                 inject_value = None
                 for target in injection_targets:
-                    # Set breakpoint
                     print("Target: ", target)
+                    # Set breakpoint
+                    # Need advance the DUT to the first injection
+                    # On first injection, figure out the corrupted bit
+                    # On all injections, figure out the target and load the wrong value and continue.
                     skip_count = sql_db.SkipCount(prev_cycle, target[0], target[1])
-                    if (skip_count >= 1):
-                        print("********************************")
-                        print("* Need to implement this case! *")
-                        print("********************************")
-                    self.single_dut_break(str(target[1]))
+                    prev_cycle = target[0]
+
+                    print("Break address: %X\tSkip Count: %d" % (injection_targets[0][1], skip_count))
+                    # Get the DUT to the correct location
+                    self.break_dut_after(str(target[1]), skip_count) # runs current, Removes breakpoint.
+
+                    # TODO: From here
 
                     # TODO: The target register should really be part of the database
                     # Check program counter
