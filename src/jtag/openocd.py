@@ -123,7 +123,8 @@ class openocd(jtag):
         self.telnet.read_until(b'target halted in ARM state due to breakpoint, current mode: System')
         self.telnet.write(bytes('rbp ' + address + '\n', encoding='utf-8'))
 
-    # Program must be stopped already, runs until breakpoint is hit number of times
+    # Program must be stopped already.
+    # Runs until breakpoint address is hit once, and then "times" additional times
     def break_dut_after(self, address, times):
         breaks = times
         self.telnet.write(bytes('bp ' + address + ' 1 hw\n', encoding='utf-8'))

@@ -39,7 +39,7 @@ def assembly_golden_run(sqlite_database, debugger):
     # Start zybo but halt at the drseus_sync_tag label address
     start_addr = hex(sqlite_database.get_start_addr())
     print("Start and end tag addresses", start_addr, hex(sqlite_database.get_end_addr()))
-    debugger.break_dut_after(start_addr, 1)
+    debugger.break_dut_after(start_addr, 0)
 
     # Set cycle counter granularity to 1x (default is 64 cycles per tick)
     # debugger.set_cycle_granularity()

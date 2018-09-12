@@ -79,11 +79,11 @@ class fault_injector(object):
                         print("Check counter after reset: %d" % (self.debugger.check_cycles()))
 
                         print("Breaking on", self.options.cache_sqlite.get_start_addr())
-                        self.debugger.break_dut_after(hex(self.options.cache_sqlite.get_start_addr()), 1)
+                        self.debugger.break_dut_after(hex(self.options.cache_sqlite.get_start_addr()), 0)
                         start_cycle = self.debugger.check_cycles()
 
                         print("Breaking on", self.options.cache_sqlite.get_end_addr())
-                        self.debugger.break_dut_after(hex(self.options.cache_sqlite.get_end_addr()), 1)
+                        self.debugger.break_dut_after(hex(self.options.cache_sqlite.get_end_addr()), 0)
                         end_cycle = self.debugger.check_cycles()
                         print("Raw cycles: ", start_cycle, end_cycle)
                         # Cortex-A9 PMCCNTR has two modes, use this to convert if counting 1 per 64 cycles (instead of 1 to 1)
