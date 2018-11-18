@@ -637,11 +637,23 @@ class dut(object):
             # TODO: Handle correctly
             print("Handle c read_serial timeout correctly")
 
-        output_file = open("dut_output.txt", 'r')
+        output_file = open("dut_output.txt", 'rb')
 
         while True:
-            # TODO: What about encodings? Will that be a problem is the program is spitting out something like a jpeg instead of ascii text?
-            char = output_file.read(1).replace('\x00', 'X')
+            # One complication is that some programs output ascii data, while others output binary data
+            # I resolve this by encoding everything as text, with non-ascii characters such as b'\xFF'
+
+            c = output_file.read(1)
+            if 0 == int.from_bytes(c, byteorder='big'):
+                #print("Converting to X!")
+                #char = 'X'
+                # A null byte decodes just fine under utf-8, but it thows a wrench in DrSEUs (I think).
+                char = str(c)
+            else:
+                try:
+                    char = c.decode('utf-8')
+                except UnicodeDecodeError:
+                    char = str(c)
 
             # except SerialException: # TODO: Detect in the c read_serial program
             #    errors += 1
@@ -677,7 +689,9 @@ class dut(object):
                       end='')
                 if flush:
                     stdout.flush()
+
             buff += char
+
             if not continuous and buff.endswith(string):
                 returned = True
                 break
