@@ -162,6 +162,7 @@ class jtag(object):
         event.save()
 
     # TODO: Doesn't need to be a class function
+    # TODO: Database schema update
     # PrevAccess: returns up to N unique word addresss to l2_set prior to inject_cycles
     def PrevAccess(self, sql_db, cycle, cache_set, assoc):
         candidates = []
@@ -230,8 +231,8 @@ class jtag(object):
 
                 # TEST CODE: Load a file, read variables (hardcode filename?)
                 print("!!!!TEST INJECTION CODE!!!!")
-                #inject_config_fn = "./src/jtag/test_injections/fib_rec_injection_test_0.ini"
-                inject_config_fn = "./src/jtag/test_injections/fib_rec_injection_test_1.ini"
+                inject_config_fn = "./src/jtag/test_injections/fib_rec_injection_test_0.ini"
+                #inject_config_fn = "./src/jtag/test_injections/fib_rec_injection_test_1.ini"
                 my_config = configparser.ConfigParser()
                 my_config.readfp(open(inject_config_fn))
 
@@ -252,6 +253,7 @@ class jtag(object):
 
                 # PrevAccess: returns up to N unique word addresss to l2_set prior to inject_cycles
                 # TODO: Doesn't account for data that was loaded prior to run (but currently flushing right before run so that is okay.
+                # TODO: Updating database schema
                 candidate_words = self.PrevAccess(sql_db, inject_cycles, inject_l2_set, ways)
 
                 # Candidate_words are the addresses of the word into which the fault may be injected.

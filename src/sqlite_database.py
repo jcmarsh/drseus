@@ -121,6 +121,7 @@ def print_sqlite_database(sqlite_database):
 class sqlite_database(object):
     def __init__(self, options, database_path=None):
         # Needed to search previous entries...
+        # TODO: May not be needed with the new database schema
         self.stored_address = []
         self.stored_cycles = 0
         self.stored_cache_set = None
@@ -225,6 +226,7 @@ class sqlite_database(object):
 
     def __initialize_database(self):
         print(colored("\tInitializing database...", 'yellow'))
+        # Note that this initializes the database tables (ls_inst and injection_info) used during the information collection of the golden run. Post processing will add two more tables (accesses and valid_lines)
 
         conn = connect(self.database)
         c = conn.cursor()
@@ -292,26 +294,17 @@ class sqlite_database(object):
             else:
                 cycles_list.append(line[0])
 
+        # No changes to commit
+        c.close()
+        conn.close()
+
         return len(cycles_list)
-
-    # Given a cycle count, find the following load instructions.
-    # addr, break_number = sql_db.get_next_load(injection.time)
-    def get_next_load(self, cycle):
-        print("Get next load...")
-        conn = connect(self.database)
-        c = conn.cursor()
-
-        # SELECT * FROM ls_inst WHERE cycles_t > 18000 AND load0_store1 = 0 LIMIT 1;
-        c.execute("SELECT address FROM {} WHERE {} > {} AND {} = 0 LIMIT 1".format(self.ldstr_inst_tbl, self.cycles_total_col, cycle, self.ldstr_col))
-        address = c.fetchone()[0]
-
-        # TODO: Use the address to figure out the number of times you need to break first.
-        return (address, 1)
 
     # Given a cycle count, cache set, and target address for the impacted way
     # return the list of accesses up until the first store or missed load
     #   include the first store if the store address is NOT to the address (but word matches)
     # Returns the cycle count and inst address for each injection target
+    # TODO: new database schema
     def NextLdrStr(self, cycle, cache_set, address):
         print("Get the next stores / loads for %d / %d after cycle %d" % (cache_set, address, cycle))
 
@@ -320,6 +313,11 @@ class sqlite_database(object):
 
         c.execute("SELECT cycles_t, address, load0_store1, l_s_addr, L2CC_look_d, L2CC_hit_d, instruction FROM ls_inst WHERE cycles_t > {} AND L2_set = {} AND l_s_addr >> 5 = {} ORDER BY cycles_t ASC". format(cycle, cache_set, address >> 5))
         retval = c.fetchall()
+
+        # No changes to commit
+        c.close()
+        conn.close()
+
         if retval == None:
             return None
 
@@ -367,6 +365,7 @@ class sqlite_database(object):
 
     # Given a cycle count and cache set find the addresses that loaded / stored in that set
     # return the cycle and address or None
+    # TODO: New database schema
     def PreviousLdrStr(self, cycle, cache_set):
         print("Get the stores / loads to %d prior to cycle %d" % (cache_set, cycle))
 
@@ -402,6 +401,11 @@ class sqlite_database(object):
         # Get all lines that match that cycles_t (accounts for multi loads / stores)
         c.execute("SELECT l_s_addr FROM ls_inst WHERE cycles_t = {} AND L2_set = {}".format(found_cycles, cache_set))
         retval = c.fetchall()
+
+        # No changes to commit
+        c.close()
+        conn.close()
+
         if len(retval) > 1:
             # A single command is accessing multiple lines, save others for future calls... what if multple injections in a run?
             self.stored_address = []
