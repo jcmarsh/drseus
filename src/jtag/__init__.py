@@ -195,6 +195,7 @@ class jtag(object):
                 injection = self.db.result.injection_set.create(success=False, time=injection_time, **injection)
                 injections.append(injection)
 
+        # TODO: This is where the file should be read... if it is
         print("********************************************************************************")
         print("Injection times:")
         print("\t", injection_times)
@@ -231,8 +232,8 @@ class jtag(object):
 
                 # TEST CODE: Load a file, read variables (hardcode filename?)
                 print("!!!!TEST INJECTION CODE!!!!")
-                inject_config_fn = "./src/jtag/test_injections/fib_rec_injection_test_0.ini"
-                #inject_config_fn = "./src/jtag/test_injections/fib_rec_injection_test_1.ini"
+                #inject_config_fn = "./src/jtag/test_injections/fib_rec_injection_test_0.ini"
+                inject_config_fn = "./src/jtag/test_injections/fib_rec_injection_test_1.ini"
                 my_config = configparser.ConfigParser()
                 my_config.readfp(open(inject_config_fn))
 
@@ -342,6 +343,8 @@ class jtag(object):
                     elif "STC" in instruction:
                         # TODO: Same as STCL
                         print("Inject into STC", instruction)
+                    else:
+                        print("ERROR: Not sure what this instruction is: ", instruction)
 
 
                     # TODO: I'm still not sure if I'm dealing with the target address vs inject byte (byte address vs cache line (target word?))
@@ -364,6 +367,7 @@ class jtag(object):
                     # inject fault <- injection.injected_value = hex(int(injection.gold_value, base=16) ^ (1 << injection.bit))
                     if inject_value == None:
                         # read value from target (set injection.gold_value?)
+                        # TODO: Use existing get_register_value function
                         value = self.command(command = 'reg %s' % (target_reg), error_message = 'Could not read reg')
                         # print("inject target: ", value)
                         value = (value.split())[2]

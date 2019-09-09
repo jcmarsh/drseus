@@ -311,6 +311,7 @@ class sqlite_database(object):
         conn = connect(self.database)
         c = conn.cursor()
 
+        # c.execute("SELECT * FROM valid_lines WHERE l2_set = {}
         c.execute("SELECT cycles_t, address, load0_store1, l_s_addr, L2CC_look_d, L2CC_hit_d, instruction FROM ls_inst WHERE cycles_t > {} AND L2_set = {} AND l_s_addr >> 5 = {} ORDER BY cycles_t ASC". format(cycle, cache_set, address >> 5))
         retval = c.fetchall()
 
