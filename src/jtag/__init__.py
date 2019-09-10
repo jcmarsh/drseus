@@ -178,24 +178,51 @@ class jtag(object):
 
     # Returns: num_register_diffs, num_memory_diffs, persistent_faults, reset_next?
     def inject_faults(self, sql_db):
-        # Select injection times
         injection_times = []
-        for i in range(self.options.injections):
-            # Pulls first and last cycle counts from the load / store database
-            new_inject_time = int(uniform(sql_db.get_start_cycle(), sql_db.get_end_cycle()))
-            # print("Injection time,", new_inject_time, " : between ", sql_db.get_start_cycle(), sql_db.get_end_cycle())
-            injection_times.append(new_inject_time)
-
-        # Select targets and injection object
         injections = []
-        if hasattr(self, 'targets') and self.targets:
-            for injection_time in sorted(injection_times):
-                injection = choose_injection(self.targets, self.options.selected_target_indices)
-                print(injection)
-                injection = self.db.result.injection_set.create(success=False, time=injection_time, **injection)
-                injections.append(injection)
 
-        # TODO: This is where the file should be read... if it is
+        # Check if loading a preset fault from a file (for now hard coded)
+        if True:
+            # TEST CODE: Load a file, read variables (hardcode filename?)
+            print("!!!!TEST INJECTION CODE!!!!")
+            #inject_config_fn = "./src/jtag/test_injections/fib_rec_injection_test_0.ini"
+            inject_config_fn = "./src/jtag/test_injections/fib_rec_injection_test_1.ini"
+            print("Injection file: ", inject_config_fn)
+            my_config = configparser.ConfigParser()
+            my_config.readfp(open(inject_config_fn))
+
+            injection_times.append(int(my_config.get("target", "inject_cycles")))
+            # inject_cycles=int(my_config.get("target",  "inject_cycles"))
+
+            injection = {}
+            injection['target'] = "CACHE_L2"
+            injection['bit'] = (int(my_config.get("target", "inject_byte")) << 3) + int(my_config.get("target", "inject_bit"))
+            injection['field'] = 'data_' + my_config.get("target", "inject_way")
+            # Here register means the cacheline from the json file.
+            # TODO: May need a leading 0 if < 1000
+            injection['register'] = 'cacheline_' + my_config.get("target",  "inject_l2_set")
+
+            # Only works for a single injection right now
+            injection = self.db.result.injection_set.create(success=False, time=injection_times[0], **injection)
+            injections.append(injection)
+
+        else:
+            # Select injection times
+            for i in range(self.options.injections):
+                # Pulls first and last cycle counts from the load / store database
+                new_inject_time = int(uniform(sql_db.get_start_cycle(), sql_db.get_end_cycle()))
+                # print("Injection time,", new_inject_time, " : between ", sql_db.get_start_cycle(), sql_db.get_end_cycle())
+                injection_times.append(new_inject_time)
+
+            # Select targets and injection object
+            if hasattr(self, 'targets') and self.targets:
+                for injection_time in sorted(injection_times):
+                    injection = choose_injection(self.targets, self.options.selected_target_indices)
+                    print(injection)
+                    # TODO: Sigh.
+                    injection = self.db.result.injection_set.create(success=False, time=injection_time, **injection)
+                    injections.append(injection)
+
         print("********************************************************************************")
         print("Injection times:")
         print("\t", injection_times)
@@ -230,27 +257,14 @@ class jtag(object):
 
                 ways = 8 # TODO: Hardcoding for L2 cache
 
-                # TEST CODE: Load a file, read variables (hardcode filename?)
-                print("!!!!TEST INJECTION CODE!!!!")
-                #inject_config_fn = "./src/jtag/test_injections/fib_rec_injection_test_0.ini"
-                inject_config_fn = "./src/jtag/test_injections/fib_rec_injection_test_1.ini"
-                my_config = configparser.ConfigParser()
-                my_config.readfp(open(inject_config_fn))
-
-                inject_cycles=int(my_config.get("target",  "inject_cycles"))
-                inject_l2_set=int(my_config.get("target",  "inject_l2_set"))
-                inject_way=int(my_config.get("target",  "inject_way"))
-                inject_byte=int(my_config.get("target",  "inject_byte"))
-                inject_bit=int(my_config.get("target", "inject_bit"))
+                inject_cycles = injection.time
+                inject_l2_set = int(injection.register[-4:])
+                inject_way = int(injection.field[-1:]) # TODO: limits to a 1 digit number of ways
+                inject_byte = injection.bit >> 3 # offset is in bytes, not bits
+                inject_bit = injection.bit & 7
 
                 print(inject_config_fn, inject_cycles, inject_l2_set, inject_byte, inject_way)
 
-                # NORMAL CODE
-                # inject_cycles = injection.time
-                # inject_l2_set = int(injection.register[-4:])
-                # inject_way = int(injection.field[-1:]) # TODO: limits to a 1 digit number of ways
-                # inject_byte = injection.bit >> 3 # offset is in bytes, not bits
-                # inject_bit = injection.bit & 7
 
                 # PrevAccess: returns up to N unique word addresss to l2_set prior to inject_cycles
                 # TODO: Doesn't account for data that was loaded prior to run (but currently flushing right before run so that is okay.
