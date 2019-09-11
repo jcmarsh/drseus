@@ -153,6 +153,7 @@ class jtag(object):
         event.save()
 
     def continue_dut(self, continue_command):
+        print("Continue dut called: ", continue_command)
         event = self.db.log_event(
             'Information', 'Debugger', 'Continue DUT', success=False)
         self.command(continue_command, error_message='Error continuing DUT',
@@ -291,7 +292,8 @@ class jtag(object):
 
                 target_address = (candidate_words[inject_way] << 5) + inject_byte
                 # TODO: this function needs to be tested better <- Is it returning matches for the exact address or the cache line with that address?
-                # NextLdrStr returns (cycle_t, instr_addr) for each following instruction that accesses the target cache line up until the first missed load or first store (the store is included if the line matches but address does not).
+                # NextLdrStr returns (cycle_t, instr_addr) for each following instruction that accesses the target cache line up until the first missed load
+                # or first store (the store is included if the line matches but address does not).
                 injection_targets = sql_db.NextLdrStr(inject_cycles, inject_l2_set, target_address)
                 print("Injection targets: ", injection_targets)
 
@@ -343,6 +345,7 @@ class jtag(object):
                         print("Inject into LDC", instruction)
 
                     elif "STR" in instruction:
+                        # TODO: I'm really not sure about this... Isn't this overwriting the cache?
                         # TODO: For stores, may need to inject fault on the saved memory. NextLdrStr only returns stores if the line matches but not the address
                         print("Inject into STR", instruction)
 
@@ -381,7 +384,8 @@ class jtag(object):
                     # inject fault <- injection.injected_value = hex(int(injection.gold_value, base=16) ^ (1 << injection.bit))
                     if inject_value == None:
                         # read value from target (set injection.gold_value?)
-                        # TODO: Use existing get_register_value function
+                        # Can not use existing get_register_value function ("register" is cacheline_XXXX from json)
+                        # TODO: Potential Function, reading a register
                         value = self.command(command = 'reg %s' % (target_reg), error_message = 'Could not read reg')
                         # print("inject target: ", value)
                         value = (value.split())[2]
@@ -395,19 +399,38 @@ class jtag(object):
                         injection.injected_value = inject_value # TODO: Could clean up
                         print("inject_value: ", hex(inject_value))
 
+                    injection.save() #? injection.success, set_register_value... makes sense to write new functions or modify?
+
                     # inject "inject value" in target register
+                    # Using this instead of set_register_value()
+                    # TODO: Potential Function
                     self.command(command = 'reg %s 0x%s' % (target_reg, hex(inject_value)), #error_message = 'Failed to inject fault in register')
                                  # expected_output = '%s (/32): 0x%s' % (target_reg, hex(inject_value)),
                                  error_message = 'Failed to inject fault in register%s' % (target_reg))
+
                     print("Did that bloody work?")
 
-                    # injection.save()? injection.success, set_register_value... makes sense to write new functions or modify?
+                    # TODO: Potential Function, reading a register
+                    new_value = self.command(command = 'reg %s' % (target_reg), error_message = 'Could not read reg')
+                    # print("inject target: ", value)
+                    new_value = int((new_value.split())[2], 16)
+                    if new_value == inject_value:
+                        print("Successfully changed register value")
+                        injection.success = True
+                        injection.save()
+                        self.db.log_event('Information', 'Debugger', 'Fault injected')
+                    else:
+                        print("ERROR: Failed to change register value")
+                        self.db.log_event('Error', 'Debugger', 'Injection failed')
+
                     #############################
 
-                self.command(command = 'resume', error_message = "Failed to resume")
+                # All faults should have now been injected... only one cache fault (which may have resulted in several injections)
+                #self.command(command = 'resume', error_message = "Failed to resume")
+                print("Resuming execution")
+                self.continue_dut()
 
-                # All faults should have now been injected
-                # TODO: What is this return? num_register_diffs, num_memory_diffs?
+                # Returns: num_register_diffs, num_memory_diffs, persistent_faults, reset_next?
                 return None, None, False, True
             # END OF - if (injection.target == 'CACHE_L2'):
 
