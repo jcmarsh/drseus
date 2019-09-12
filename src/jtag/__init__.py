@@ -184,13 +184,16 @@ class jtag(object):
 
         # Check if loading a preset fault from a file (for now hard coded)
         if True:
+            # Possible optimization: read config once into global vars
             # TEST CODE: Load a file, read variables (hardcode filename?)
             print("!!!!TEST INJECTION CODE!!!!")
             #inject_config_fn = "./src/jtag/test_injections/fib_rec_injection_test_0.ini"
             inject_config_fn = "./src/jtag/test_injections/fib_rec_injection_test_1.ini"
             print("Injection file: ", inject_config_fn)
             my_config = configparser.ConfigParser()
-            my_config.readfp(open(inject_config_fn))
+            config_file = open(inject_config_fn)
+            my_config.read_file(config_file)
+            # TODO: Can I close the file here?
 
             injection_times.append(int(my_config.get("target", "inject_cycles")))
             # inject_cycles=int(my_config.get("target",  "inject_cycles"))
@@ -207,6 +210,7 @@ class jtag(object):
             injection = self.db.result.injection_set.create(success=False, time=injection_times[0], **injection)
             injections.append(injection)
 
+            close(config_file)
         else:
             # Select injection times
             for i in range(self.options.injections):
