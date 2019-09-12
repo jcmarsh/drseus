@@ -210,7 +210,7 @@ class jtag(object):
             injection = self.db.result.injection_set.create(success=False, time=injection_times[0], **injection)
             injections.append(injection)
 
-            close(config_file)
+            config_file.close()
         else:
             # Select injection times
             for i in range(self.options.injections):
