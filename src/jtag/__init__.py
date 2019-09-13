@@ -82,9 +82,9 @@ class jtag(object):
                                      timeout=self.timeout)
                 if self.telnet:
                     break;
-        self.db.log_event(
-            'Information', 'Debugger', 'Connected to telnet',
-            '{}:{}'.format(self.options.debugger_ip_address, self.port))
+        #self.db.log_event(
+        #    'Information', 'Debugger', 'Connected to telnet',
+        #    '{}:{}'.format(self.options.debugger_ip_address, self.port))
 
     def open(self):
         self.dut = dut(self.db, self.options)
@@ -94,8 +94,8 @@ class jtag(object):
 
     def close(self):
         self.telnet.close()
-        self.db.log_event(
-            'Information', 'Debugger', 'Closed telnet')
+        #self.db.log_event(
+        #    'Information', 'Debugger', 'Closed telnet')
         self.dut.close()
         if self.db.campaign.aux:
             self.aux.close()
@@ -145,22 +145,22 @@ class jtag(object):
                     break
 
     def halt_dut(self, halt_command, expected_output):
-        event = self.db.log_event(
-            'Information', 'Debugger', 'Halt DUT', success=False)
+        #event = self.db.log_event(
+        #    'Information', 'Debugger', 'Halt DUT', success=False)
         self.command(halt_command, expected_output, 'Error halting DUT', False)
         self.dut.stop_timer()
-        event.success = True
-        event.save()
+        #event.success = True
+        #event.save()
 
     def continue_dut(self, continue_command):
         print("Continue dut called: ", continue_command)
-        event = self.db.log_event(
-            'Information', 'Debugger', 'Continue DUT', success=False)
+        #event = self.db.log_event(
+        #    'Information', 'Debugger', 'Continue DUT', success=False)
         self.command(continue_command, error_message='Error continuing DUT',
                      log_event=False)
         self.dut.start_timer()
-        event.success = True
-        event.save()
+        #event.success = True
+        #event.save()
 
     # TODO: Doesn't need to be a class function
     # TODO: Database schema update
@@ -422,7 +422,7 @@ class jtag(object):
                         print("Successfully changed register value")
                         injection.success = True
                         injection.save()
-                        self.db.log_event('Information', 'Debugger', 'Fault injected')
+                        #self.db.log_event('Information', 'Debugger', 'Fault injected')
                     else:
                         print("ERROR: Failed to change register value")
                         self.db.log_event('Error', 'Debugger', 'Injection failed')
@@ -465,8 +465,8 @@ class jtag(object):
                     int(self.get_register_value(injection), base=16):
                 injection.success = True
                 injection.save()
-                self.db.log_event(
-                    'Information', 'Debugger', 'Fault injected')
+                #self.db.log_event(
+                #    'Information', 'Debugger', 'Fault injected')
             else:
                 self.set_mode()
                 self.set_register_value(injection)
@@ -474,9 +474,9 @@ class jtag(object):
                         int(self.get_register_value(injection), base=16):
                     injection.success = True
                     injection.save()
-                    self.db.log_event(
-                        'Information', 'Debugger',
-                        'Fault injected as supervisor')
+                    #self.db.log_event(
+                    #    'Information', 'Debugger',
+                    #    'Fault injected as supervisor')
                 else:
                     self.db.log_event(
                         'Error', 'Debugger', 'Injection failed')
@@ -486,9 +486,9 @@ class jtag(object):
 
     def command(self, command, expected_output, error_message,
                 log_event, line_ending, echo):
-        if log_event:
-            event = self.db.log_event(
-                'Information', 'Debugger', 'Command', command, success=False)
+        #if log_event:
+        #    event = self.db.log_event(
+        #        'Information', 'Debugger', 'Command', command, success=False)
         expected_output = [bytes(output, encoding='utf-8')
                            for output in expected_output]
         return_buffer = ''
@@ -553,9 +553,9 @@ class jtag(object):
         for message in self.error_messages:
             if message in return_buffer:
                 raise DrSEUsError(error_message)
-        if log_event:
-            event.success = True
-            event.save()
+        #if log_event:
+        #    event.success = True
+        #    event.save()
         return return_buffer
 
     def select_core(self, core):
