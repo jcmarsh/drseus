@@ -35,7 +35,7 @@ def run():
                 'NAME': options.db_file
             }
         },
-        DEBUG=True,
+        DEBUG=False,
         INSTALLED_APPS=(
             'django.contrib.staticfiles',
             'django_filters',
