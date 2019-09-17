@@ -11,6 +11,7 @@ from ..dut import dut
 from ..error import DrSEUsError
 from ..targets import choose_injection, get_targets
 
+#from django import db
 
 def find_all_uarts():
     return sorted(
@@ -181,6 +182,8 @@ class jtag(object):
     def inject_faults(self, sql_db):
         injection_times = []
         injections = []
+
+        # db.reset_queries()
 
         # Check if loading a preset fault from a file (for now hard coded)
         if True:
