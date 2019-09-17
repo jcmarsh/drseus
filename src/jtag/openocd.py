@@ -72,16 +72,16 @@ class openocd(jtag):
         super().set_targets('a9')
 
     def open(self):
-        self.openocd = Popen([
-            'openocd', '-c',
-            'gdb_port {}; tcl_port 0; telnet_port {}; interface ftdi;'.format(
-                self.gdb_port, self.port) +
-            (' ftdi_serial {};'.format(self.device_info['ftdi'])
-             if self.device_info is not None else ''),
-            '-f', '{}/openocd_zedboard_{}.cfg'.format(
-                dirname(abspath(__file__)),
-                'smp' if self.options.smp else 'amp')],
-            stderr=(DEVNULL if self.options.command != 'openocd' else None))
+        #self.openocd = Popen([
+        #    'openocd', '-c',
+        #    'gdb_port {}; tcl_port 0; telnet_port {}; interface ftdi;'.format(
+        #        self.gdb_port, self.port) +
+        #    (' ftdi_serial {};'.format(self.device_info['ftdi'])
+        #     if self.device_info is not None else ''),
+        #    '-f', '{}/openocd_zedboard_{}.cfg'.format(
+        #        dirname(abspath(__file__)),
+        #        'smp' if self.options.smp else 'amp')],
+        #    stderr=(DEVNULL if self.options.command != 'openocd' else None))
         if self.options.command != 'openocd':
             self.db.log_event(
                 'Information', 'Debugger', 'Launched openocd')
@@ -91,15 +91,15 @@ class openocd(jtag):
 
     def close(self):
         self.telnet.write(bytes('shutdown\n', encoding='utf-8'))
-        try:
-            self.openocd.wait(timeout=30)
-        except TimeoutExpired:
-            self.openocd.kill()
-            self.db.log_event(
-                'Warning', 'Debugger', 'Killed unresponsive openocd')
-        else:
-            self.db.log_event(
-                'Information', 'Debugger', 'Closed openocd')
+        #try:
+        #    self.openocd.wait(timeout=30)
+        #except TimeoutExpired:
+        #    self.openocd.kill()
+        #    self.db.log_event(
+        #        'Warning', 'Debugger', 'Killed unresponsive openocd')
+        #else:
+        #    self.db.log_event(
+        #        'Information', 'Debugger', 'Closed openocd')
         super().close()
 
     def command(self, command, expected_output=[], error_message=None,
@@ -215,25 +215,38 @@ class openocd(jtag):
 
             print("Reseting DUT")
 
-            # Shutdown current openocd
-            p = subprocess.Popen("sudo pkill openocd", shell=True)
-            p.communicate()
-
-            sleep(1)
+            if (hasattr(self, "openocd")):
+                print ("Openocd exists!", self.openocd)
+                self.openocd.kill()
+                self.openocd.communicate()
+                sleep(1) # TODO: delete
+            else:
+                print("No OpenOCDs to see here")
+                p = subprocess.Popen(["sudo", "pkill", "openocd"]) #("sudo pkill openocd") #, shell=True)
+                p.communicate()
+                p.kill()
 
             # Reupload to zybo board with xsdb
-            p = subprocess.Popen("xsdb ./instr_stop.xsdb", cwd="../jtag_eval/xsdb/", shell=True)
+            p = subprocess.Popen(["xsdb", "./instr_stop.xsdb"], cwd="../jtag_eval/xsdb/") #, shell=True)
             p.communicate()
+            p.kill()
 
             sleep(2)
 
             # Restart openocd
-            p = subprocess.call("gnome-terminal -- openocd -f openocd.cfg", cwd="../jtag_eval/openOCD_cfg", shell=True)
+            # The open() call used to start open ocd... TODO: try that again?
+            self.openocd = subprocess.Popen(["openocd", "-f", "openocd.cfg"], cwd="../jtag_eval/openOCD_cfg")#call("gnome-terminal -- openocd -f openocd.cfg", cwd="../jtag_eval/openOCD_cfg", shell=True)
             # p.communicate()
 
-            sleep(2)
+            sleep(1) # Give OpenOCD a chance to setup the telnet server
+            # Possible optimization: wait 500ms (or 1000), try, and retry
 
-            self.open()
+            try:
+                self.open()
+            except ConnectionRefusedError:
+                print("!!!trying again!!!")
+                sleep(2)
+                self.open()
         else:
             super().reset_dut(
                 ['JTAG tap: zynq.dap tap/device found: 0x4ba00477'], attempts)
