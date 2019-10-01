@@ -238,49 +238,8 @@ class dut(object):
 
     def flush(self, check_errors=False):
         try:
-            self.serial.reset_output_buffer()
-            buff = None
-            try:
-                in_bytes = self.serial.in_waiting
-            except KeyboardInterrupt:
-                raise KeyboardInterrupt
-            except:
-                self.serial.reset_input_buffer()
-            else:
-                if in_bytes:
-                    buff = ''
-                    for b in range(in_bytes):
-                        char = self.serial.read().decode('utf-8', 'replace')
-                        buff += char
-                        if self.options.debug:
-                            print(
-                                colored(char,
-                                        'green' if not self.aux else 'cyan'),
-                                end='')
-                    if self.options.debug:
-                        stdout.flush()
-                    if self.db.result is None:
-                        if self.aux:
-                            self.db.campaign.aux_output += buff
-                        else:
-                            self.db.campaign.dut_output += buff
-                        self.db.campaign.save()
-                    else:
-                        if self.aux:
-                            self.db.result.aux_output += buff
-                        else:
-                            self.db.result.dut_output += buff
-                        self.db.result.save()
-
-                    if check_errors:
-                        for message, category in self.error_messages:
-                            if message in buff:
-                                raise DrSEUsError(category)
-            self.db.log_event(
-                'Information', 'DUT' if not self.aux else 'AUX',
-                'Flushed serial buffers', buff)
-        except KeyboardInterrupt:
-            raise KeyboardInterrupt
+            self.db.log_event('Information', 'Debugger', 'Read output from device')
+            self.read_until_no_read_serial_launch("safeword");
         except:
             self.db.log_event(
                 'Error', 'DUT' if not self.aux else 'AUX',
@@ -621,12 +580,7 @@ class dut(object):
                 string = '->'
             else:
                 string = self.prompt
-        buff = ''
-        event_buff = ''
-        event_buff_logged = ''
-        errors = 0
-        hanging = False
-        returned = False
+
         print("read_until: " + str(self.options.timeout+5) + " or: " + self.prompt)
 
         # TODO: Pass arguments correctly
@@ -636,6 +590,16 @@ class dut(object):
         except TimeoutException:
             # TODO: Handle correctly
             print("Handle c read_serial timeout correctly")
+
+        return self.read_until_no_read_serial_launch(string, continuous, boot, flush)
+
+    def read_until_no_read_serial_launch(self, string=None, continuous=False, boot=False, flush=True):
+        buff = ''
+        event_buff = ''
+        event_buff_logged = ''
+        errors = 0
+        hanging = False
+        returned = False
 
         output_file = open("dut_output.txt", 'rb')
 

@@ -5,6 +5,7 @@ from threading import Thread
 from time import perf_counter, sleep
 from traceback import print_exc
 from subprocess import call
+from subprocess import run
 
 from .database import database
 from .error import DrSEUsError
@@ -12,6 +13,7 @@ from .jtag.bdi import bdi
 from .jtag.dummy import dummy
 from .jtag.openocd import openocd
 from .sqlite_database import sqlite_database, print_sqlite_database, assembly_golden_run, record_tags, get_database_path
+from .timeout import timeout, TimeoutException
 
 class fault_injector(object):
     def __init__(self, options, power_switch=None):
@@ -265,6 +267,9 @@ class fault_injector(object):
                 if sleep_time > 0:
                     sleep(sleep_time)
 
+        def serial_output():
+            run("./read_serial/read_serial /dev/ttyUSBzybo safeword > dut_output.txt", shell=True)
+
         def perform_injections(reset_next_run):
             print("Using database: %s" % (get_database_path(self.options)))
             sql_db = sqlite_database(self.options, get_database_path(self.options))
@@ -283,6 +288,7 @@ class fault_injector(object):
                     with iteration_counter.get_lock():
                         iteration = iteration_counter.value
                         if iteration:
+                            self.db.log_event('Information', 'Fault Injector', 'Iteration #' + str(iteration_counter.value))
                             iteration_counter.value -= 1
                         else:
                             break
@@ -294,6 +300,9 @@ class fault_injector(object):
                         try:
                             # Reset the DUT. reset_dut calls reboot.sh
                             self.debugger.reset_dut()
+                            output_thread = Thread(target=serial_output)
+                            output_thread.start()
+
                             # TODO: What location?
                         except DrSEUsError as error:
                             self.db.result.outcome_category = 'Debugger error'
@@ -313,6 +322,7 @@ class fault_injector(object):
                 start = perf_counter()
                 global incomplete
                 incomplete = True
+
                 log_thread = Thread(target=background_log)
                 try:
                     # Run the program while injected some number of faults
@@ -336,19 +346,38 @@ class fault_injector(object):
                     except DrSEUsError:
                         pass
                 try:
-                    self.debugger.dut.flush(check_errors=True)
+                    if (reset_next_run):
+                        # A fault was injected, so need to record the results and all that jazz
+                        # TODO: Fix...
+                        self.debugger.dut.flush(check_errors=True)
+                    else:
+                        # No faults where injected
+                        print("SKIPPED INJECTION", iteration_counter.value)
+                        if (iteration_counter.value == 0):
+                            # The final injection run should finish execution
+                            self.debugger.continue_dut()
+                            self.debugger.dut.flush(check_errors=True)
+                            self.db.result.outcome = 'Injection Skipped: No Impact'
+                            self.db.result.save()
+                            self.db.log_result()
+                        else:
+                            # TODO: Save that the injection was skipped somehow
+                            print("Whut?")
+                            pass
+
                 except DrSEUsError as error:
                     self.db.result.outcome_category = 'Post execution error'
                     self.db.result.outcome = error.type
                 if self.db.campaign.aux:
                     self.debugger.aux.flush()
-            self.db.log_result()
-            if self.options.command == 'inject':
-                self.close()
-            elif self.options.command == 'supervise':
-                self.db.result.outcome_category = 'Supervisor'
-                self.db.result.outcome = ''
-                self.db.result.save()
+            #self.db.log_result()
+            #if self.options.command == 'inject':
+            #    # TODO: what does close do?
+            #    self.close()
+            #elif self.options.command == 'supervise':
+            #    self.db.result.outcome_category = 'Supervisor'
+            #    self.db.result.outcome = ''
+            #    self.db.result.save()
 
         # Body of inject_campaign(self, iteration_counter):
         try:

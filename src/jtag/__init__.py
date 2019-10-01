@@ -186,8 +186,8 @@ class jtag(object):
         if True:
             # TEST CODE: Load a file, read variables (hardcode filename?)
             print("!!!!TEST INJECTION CODE!!!!")
-            #inject_config_fn = "./src/jtag/test_injections/fib_rec_injection_test_0.ini"
-            inject_config_fn = "./src/jtag/test_injections/fib_rec_injection_test_1.ini"
+            inject_config_fn = "./src/jtag/test_injections/fib_rec_injection_test_0.ini"
+            #inject_config_fn = "./src/jtag/test_injections/fib_rec_injection_test_1.ini"
             print("Injection file: ", inject_config_fn)
             my_config = configparser.ConfigParser()
             my_config.readfp(open(inject_config_fn))
@@ -299,6 +299,7 @@ class jtag(object):
 
                 if (len(injection_targets) == 0):
                     print("No Fault injected: value in cache never read.")
+                    self.db.log_event('Information', 'Debugger', 'Skipping fault injection')
                     return None, None, False, False
 
                 prev_cycle = 0
