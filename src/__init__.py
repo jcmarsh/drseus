@@ -35,6 +35,7 @@ def run():
                 'NAME': options.db_file
             }
         },
+        ALLOWED_HOSTS=['127.0.0.1'],
         DEBUG=False,
         INSTALLED_APPS=(
             'django.contrib.staticfiles',
