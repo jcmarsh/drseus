@@ -274,6 +274,7 @@ class fault_injector(object):
             print("Using database: %s" % (get_database_path(self.options)))
             sql_db = sqlite_database(self.options, get_database_path(self.options))
 
+            # Copy the correct executable over to be programmed onto the board
             print("Using elf: %s" % ("campaign-data/{}/Attempt2.elf".format(self.options.campaign_id)))
             call(["cp", "campaign-data/{}/Attempt2.elf".format(self.options.campaign_id), "../jtag_eval/xsdb/"])
 
@@ -323,13 +324,12 @@ class fault_injector(object):
                 global incomplete
                 incomplete = True
 
-                log_thread = Thread(target=background_log)
+                # log_thread = Thread(target=background_log)
                 try:
                     # Run the program while injected some number of faults
-                    # TODO: What state is the dut in before and after?
                     (self.db.result.num_register_diffs, self.db.result.num_memory_diffs, persistent_faults, reset_next_run) = self.debugger.inject_faults(sql_db)
-                    if self.options.log_delay is not None:
-                        log_thread.start()
+                    #if self.options.log_delay is not None:
+                    #    log_thread.start()
                 except DrSEUsError as error:
                     self.db.result.outcome = str(error)
                     self.db.result.outcome_category = 'Debugger error'
@@ -360,6 +360,7 @@ class fault_injector(object):
                             # The final injection run should finish execution
                             self.debugger.continue_dut()
                             self.debugger.dut.flush(check_errors=True)
+                            self.debugger.dut.check_output()
                             self.db.result.save()
                             self.db.log_result()
                         else:
@@ -383,7 +384,7 @@ class fault_injector(object):
 
         # Body of inject_campaign(self, iteration_counter):
         try:
-            # Executes multple iterations of the program, injecting one or more fault into each
+            # Executes multiple iterations of the program, injecting one or more fault into each
             # perform_injections() sets up all of the iterations of the program;
             #   Injections are done in jtag/__init__.py
             perform_injections(True)
