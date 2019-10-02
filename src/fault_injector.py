@@ -347,9 +347,12 @@ class fault_injector(object):
                         pass
                 try:
                     if (reset_next_run):
+                        # TODO: These should be in one function
                         # A fault was injected, so need to record the results and all that jazz
-                        # TODO: Fix...
                         self.debugger.dut.flush(check_errors=True)
+                        self.debugger.dut.check_output()
+                        self.db.result.save()
+                        self.db.log_result()
                     else:
                         # No faults where injected
                         print("SKIPPED INJECTION", iteration_counter.value)
@@ -357,11 +360,10 @@ class fault_injector(object):
                             # The final injection run should finish execution
                             self.debugger.continue_dut()
                             self.debugger.dut.flush(check_errors=True)
-                            self.db.result.outcome = 'Injection Skipped: No Impact'
                             self.db.result.save()
                             self.db.log_result()
                         else:
-                            # TODO: Save that the injection was skipped somehow
+                            # TODO: Save that the injection was skipped? Recorded as injection / event
                             print("Whut?")
                             pass
 

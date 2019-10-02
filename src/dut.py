@@ -239,7 +239,7 @@ class dut(object):
     def flush(self, check_errors=False):
         try:
             self.db.log_event('Information', 'Debugger', 'Read output from device')
-            self.read_until_no_read_serial_launch("safeword");
+            self.read_until_no_read_serial_launch(self.prompt)
         except:
             self.db.log_event(
                 'Error', 'DUT' if not self.aux else 'AUX',
@@ -904,11 +904,15 @@ class dut(object):
             self.db.result.data_diff = SequenceMatcher(
                 None, solutionContents, resultContents).quick_ratio()
         if self.db.result.data_diff == 1.0:
-            if not local_diff:
-                rmtree(result_folder)
+            #if not local_diff:
+            #    print("I don't know what local_diff is")
+            #    rmtree(result_folder)
             if self.db.result.detected_errors:
                 self.db.result.outcome_category = 'Data error'
                 self.db.result.outcome = 'Corrected data error'
+            else:
+                self.db.result.outcome_category = 'Benign'
+                self.db.result.outcome = 'No fault'
         else:
             self.db.result.outcome_category = 'Data error'
             if self.db.result.detected_errors:
