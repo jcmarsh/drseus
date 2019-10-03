@@ -218,8 +218,7 @@ class jtag(object):
         if True:
             # TEST CODE: Load a file, read variables (hardcode filename?)
             print("!!!!TEST INJECTION CODE!!!!")
-            #inject_config_fn = "./src/jtag/test_injections/fib_rec_injection_test_0.ini"
-            inject_config_fn = "./src/jtag/test_injections/fib_rec_injection_test_1.ini"
+            inject_config_fn = "./src/jtag/test_injections/fib_rec_injection_test_3.ini"
             print("Injection file: ", inject_config_fn)
             my_config = configparser.ConfigParser()
             my_config.readfp(open(inject_config_fn))
@@ -298,10 +297,15 @@ class jtag(object):
 
                 print(inject_config_fn, inject_cycles, inject_l2_set, inject_byte, inject_way)
 
+                # Doesn't account for data that was loaded prior to run (but currently flushing right before run so that is okay.
+                valid_line = sql_db.GetValidLine(inject_cycles, inject_l2_set, inject_way)
+                if valid_line == None:
+                    print("The data of the fault injection is not valid. Take no action.")
+                    self.db.log_event('Information', 'Debugger', 'Skipping fault injection: not valid')
+                    return None, None, False, False
 
+                # TODO: Change to using new schema, from here
                 # PrevAccess: returns up to N unique word addresss to l2_set prior to inject_cycles
-                # TODO: Doesn't account for data that was loaded prior to run (but currently flushing right before run so that is okay.
-                # TODO: Updating database schema
                 candidate_words = self.PrevAccess(sql_db, inject_cycles, inject_l2_set, ways)
 
                 # Candidate_words are the addresses of the word into which the fault may be injected.

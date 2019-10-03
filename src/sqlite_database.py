@@ -277,6 +277,21 @@ class sqlite_database(object):
         conn.commit()
         conn.close()
 
+    # Returns the ValidLine ID of the data at inject_l2_set and inject_way at inject_cycles
+    # Returns None of the data is not valid
+    # Requires that the Database went through post golden run processing
+    def GetValidLine(self, inject_cycles, inject_l2_set, inject_way):
+        conn = connect(self.database)
+        c = conn.cursor()
+
+        c.execute("SELECT vl_id FROM valid_lines WHERE cycle_in < {} AND l2_set = {} AND way = {} ORDER BY cycle_in DESC".format(inject_cycles, inject_l2_set, inject_way))
+        valid_line_id = c.fetchone()
+
+        c.close()
+        conn.close()
+
+        return valid_line_id
+
     # Return the number of breakpoints that must be skipped to reach the first execution of the
     #   instruction (address) after a given cycle. Check total cycles to spot multies
     def SkipCount(self, start_cycle, end_cycle, address):
