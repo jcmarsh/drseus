@@ -49,6 +49,16 @@ def find_open_port():
             sock.close()
             return port
 
+def convert_register_alias(target_reg):
+    convert_reg = target_reg
+    if target_reg == 'r13':
+        convert_reg = 'sp'
+    if target_reg == 'r14':
+        convert_reg = 'lr'
+    if target_reg == 'r15':
+        convert_reg = 'pc'
+    print("Target Reg: ", target_reg)
+    return convert_reg
 
 class jtag(object):
     def __init__(self, database, options):
@@ -177,6 +187,25 @@ class jtag(object):
                 candidates.append(address)
         return candidates
 
+    def change_register(self, injection, target_reg, inject_value):
+        self.command(command = 'reg %s 0x%s' % (target_reg, hex(inject_value)), #error_message = 'Failed to inject fault in register')
+            # expected_output = '%s (/32): 0x%s' % (target_reg, hex(inject_value)),
+            error_message = 'Failed to inject fault in register%s' % (target_reg))
+
+        print("Did that bloody work?")
+
+        new_value = self.command(command = 'reg %s' % (target_reg), error_message = 'Could not read reg')
+        # print("inject target: ", value)
+        new_value = int((new_value.split())[2], 16)
+        if new_value == inject_value:
+            print("Successfully changed register value")
+            injection.success = True
+            injection.save()
+            self.db.log_event('Information', 'Debugger', 'Fault injected')
+        else:
+            print("ERROR: Failed to change register value")
+            self.db.log_event('Error', 'Debugger', 'Injection failed')
+
     # Returns: num_register_diffs, num_memory_diffs, persistent_faults, reset_next?
     def inject_faults(self, sql_db):
         injection_times = []
@@ -186,8 +215,8 @@ class jtag(object):
         if True:
             # TEST CODE: Load a file, read variables (hardcode filename?)
             print("!!!!TEST INJECTION CODE!!!!")
-            inject_config_fn = "./src/jtag/test_injections/fib_rec_injection_test_0.ini"
-            #inject_config_fn = "./src/jtag/test_injections/fib_rec_injection_test_1.ini"
+            #inject_config_fn = "./src/jtag/test_injections/fib_rec_injection_test_0.ini"
+            inject_config_fn = "./src/jtag/test_injections/fib_rec_injection_test_1.ini"
             print("Injection file: ", inject_config_fn)
             my_config = configparser.ConfigParser()
             my_config.readfp(open(inject_config_fn))
@@ -326,7 +355,7 @@ class jtag(object):
                     # read instruction
                     target_reg = self.command(command = 'arm disassemble %s' % (program_counter), error_message = 'You have done it now.')
                     print("Target Instruction: ", target_reg)
-                    # TODO: Need to deal with coprocessor targets here.
+
                     instruction = (target_reg.split())[2]
                     # TODO: Change to case?
                     if "LDR" in instruction:
@@ -346,24 +375,30 @@ class jtag(object):
                         print("Inject into LDC", instruction)
 
                     elif "STR" in instruction:
-                        # TODO: I'm really not sure about this... Isn't this overwriting the cache?
-                        # TODO: For stores, may need to inject fault on the saved memory. NextLdrStr only returns stores if the line matches but not the address
+                        # TODO: For stores, may need to inject fault on the saved memory.
+                        # The issue is that the whole cache line is written to memory, and not just the word overwritten by STR.
+                        # NextLdrStr only returns stores if the line matches but not the address
                         print("Inject into STR", instruction)
+                        print("\tSTR not implemented.")
 
                     elif "STM" in instruction:
                         # TODO: Deal with STM
+                        # See notes for STR above
                         print("Inject into STM", instruction)
+                        print("\tSTM not implemented.")
 
                     elif "STCL" in instruction:
-                        # TODO: Not sure if this needs to be dealt with... but maybe as above
+                        # TODO: Not sure if this needs to be dealt with... but maybe as STR above
                         print("Inject into STCL", instruction)
+                        print("\tSTCL not implemented.")
 
                     elif "STC" in instruction:
                         # TODO: Same as STCL
                         print("Inject into STC", instruction)
+                        print("\tSTC not implemented.")
+
                     else:
                         print("ERROR: Not sure what this instruction is: ", instruction)
-
 
                     # TODO: I'm still not sure if I'm dealing with the target address vs inject byte (byte address vs cache line (target word?))
                     # TODO: Move to function? Need to fit into elifs above
@@ -372,13 +407,7 @@ class jtag(object):
 
                     # find target
                     target_reg = (target_reg.split())[3].strip().strip(',')
-                    if target_reg == 'r13':
-                        target_reg = 'sp'
-                    if target_reg == 'r14':
-                        target_reg = 'lr'
-                    if target_reg == 'r15':
-                        target_reg = 'pc'
-                    print("Target Reg: ", target_reg)
+                    target_reg = convert_register_alias(target_reg)
 
                     # let data load (step):
                     self.command(command = 'step', error_message = 'Failed to step')
@@ -400,29 +429,11 @@ class jtag(object):
                         injection.injected_value = inject_value # TODO: Could clean up
                         print("inject_value: ", hex(inject_value))
 
-                    injection.save() #? injection.success, set_register_value... makes sense to write new functions or modify?
+                    injection.save()
 
                     # inject "inject value" in target register
                     # Using this instead of set_register_value()
-                    # TODO: Potential Function
-                    self.command(command = 'reg %s 0x%s' % (target_reg, hex(inject_value)), #error_message = 'Failed to inject fault in register')
-                                 # expected_output = '%s (/32): 0x%s' % (target_reg, hex(inject_value)),
-                                 error_message = 'Failed to inject fault in register%s' % (target_reg))
-
-                    print("Did that bloody work?")
-
-                    # TODO: Potential Function, reading a register
-                    new_value = self.command(command = 'reg %s' % (target_reg), error_message = 'Could not read reg')
-                    # print("inject target: ", value)
-                    new_value = int((new_value.split())[2], 16)
-                    if new_value == inject_value:
-                        print("Successfully changed register value")
-                        injection.success = True
-                        injection.save()
-                        self.db.log_event('Information', 'Debugger', 'Fault injected')
-                    else:
-                        print("ERROR: Failed to change register value")
-                        self.db.log_event('Error', 'Debugger', 'Injection failed')
+                    self.change_register(injection, target_reg, inject_value)
 
                     #############################
 
