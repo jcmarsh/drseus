@@ -187,6 +187,11 @@ class jtag(object):
                 candidates.append(address)
         return candidates
 
+    def read_register(self, target_reg):
+        register_value = self.command(command = 'reg %s' % (target_reg), error_message = 'Could not read reg')
+        # print("inject target: ", value)
+        return int((register_value.split())[2], 16)
+
     def change_register(self, injection, target_reg, inject_value):
         self.command(command = 'reg %s 0x%s' % (target_reg, hex(inject_value)), #error_message = 'Failed to inject fault in register')
             # expected_output = '%s (/32): 0x%s' % (target_reg, hex(inject_value)),
@@ -194,9 +199,7 @@ class jtag(object):
 
         print("Did that bloody work?")
 
-        new_value = self.command(command = 'reg %s' % (target_reg), error_message = 'Could not read reg')
-        # print("inject target: ", value)
-        new_value = int((new_value.split())[2], 16)
+        new_value = self.read_register(target_reg)
         if new_value == inject_value:
             print("Successfully changed register value")
             injection.success = True
@@ -347,7 +350,7 @@ class jtag(object):
                     self.break_dut_after(str(target[1]), skip_count) # runs current, Removes breakpoint.
 
                     # TODO: The target register should really be part of the database
-                    # Check program counter
+                    # Check program counter (read_register returns an int... using a string for program_counter)
                     program_counter = self.command(command = 'reg pc', error_message = 'Oh boffins!')
                     # print("PC: ", program_counter)
                     program_counter = (program_counter.split())[2]
@@ -357,6 +360,10 @@ class jtag(object):
                     print("Target Instruction: ", target_reg)
 
                     instruction = (target_reg.split())[2]
+                    # find target
+                    target_reg = (target_reg.split())[3].strip().strip(',')
+                    target_reg = convert_register_alias(target_reg)
+
                     # TODO: Change to case?
                     if "LDR" in instruction:
                         # TODO: Deal with LDR
@@ -405,29 +412,22 @@ class jtag(object):
                     # input - target_reg, inject_value, inject_byte, inject_bit, injection (to set gold, inject_value)
                     # return - inject_value
 
-                    # find target
-                    target_reg = (target_reg.split())[3].strip().strip(',')
-                    target_reg = convert_register_alias(target_reg)
 
                     # let data load (step):
                     self.command(command = 'step', error_message = 'Failed to step')
                     # inject fault <- injection.injected_value = hex(int(injection.gold_value, base=16) ^ (1 << injection.bit))
                     if inject_value == None:
-                        # read value from target (set injection.gold_value?)
+                        # read value from target
                         # Can not use existing get_register_value function ("register" is cacheline_XXXX from json)
-                        # TODO: Potential Function, reading a register
-                        value = self.command(command = 'reg %s' % (target_reg), error_message = 'Could not read reg')
-                        # print("inject target: ", value)
-                        value = (value.split())[2]
-                        inject_value = int(value, 16)
-                        print("gold_value: ", hex(inject_value))
-                        injection.gold_value = inject_value
+                        gold_value = read_register(target_reg)
+                        print("gold_value: ", hex(gold_value))
+                        injection.gold_value = gold_value
 
                         # flip bit and save new value in inject_value
                         print("Injection bit: ", (inject_byte << 3) % 32, " / ", inject_bit)
                         inject_value = inject_value ^ (1 << (((inject_byte << 3) + inject_bit) % 32)) # mod 32 for size of registers (inject_byte is for the whole cache line)
-                        injection.injected_value = inject_value # TODO: Could clean up
                         print("inject_value: ", hex(inject_value))
+                        injection.injected_value = inject_value
 
                     injection.save()
 
