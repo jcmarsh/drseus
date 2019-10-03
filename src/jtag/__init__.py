@@ -361,13 +361,35 @@ class jtag(object):
 
                     instruction = (target_reg.split())[2]
                     # find target
+                    # TODO: How does this change for LDM, for example?
                     target_reg = (target_reg.split())[3].strip().strip(',')
                     target_reg = convert_register_alias(target_reg)
+
+                    # Get the gold value and the corrupted value to inject (if first time)
+                    # let data load (step):
+                    self.command(command = 'step', error_message = 'Failed to step')
+                    # inject fault <- injection.injected_value = hex(int(injection.gold_value, base=16) ^ (1 << injection.bit))
+                    if inject_value == None:
+                        # read value from target
+                        # Can not use existing get_register_value function ("register" is cacheline_XXXX from json)
+                        gold_value = self.read_register(target_reg)
+                        print("gold_value: ", hex(gold_value))
+                        injection.gold_value = gold_value
+
+                        # flip bit and save new value in inject_value
+                        print("Injection bit: ", (inject_byte << 3) % 32, " / ", inject_bit)
+                        inject_value = gold_value ^ (1 << (((inject_byte << 3) + inject_bit) % 32)) # mod 32 for size of registers (inject_byte is for the whole cache line)
+                        print("inject_value: ", hex(inject_value))
+                        injection.injected_value = inject_value
+                    injection.save()
 
                     # TODO: Change to case?
                     if "LDR" in instruction:
                         # TODO: Deal with LDR
                         print("Inject into LDR", instruction)
+                        # inject "inject value" in target register
+                        # Using this instead of set_register_value()
+                        self.change_register(injection, target_reg, inject_value)
 
                     elif "LDM" in instruction:
                         # TODO: Deal with LDM
@@ -406,34 +428,6 @@ class jtag(object):
 
                     else:
                         print("ERROR: Not sure what this instruction is: ", instruction)
-
-                    # TODO: I'm still not sure if I'm dealing with the target address vs inject byte (byte address vs cache line (target word?))
-                    # TODO: Move to function? Need to fit into elifs above
-                    # input - target_reg, inject_value, inject_byte, inject_bit, injection (to set gold, inject_value)
-                    # return - inject_value
-
-
-                    # let data load (step):
-                    self.command(command = 'step', error_message = 'Failed to step')
-                    # inject fault <- injection.injected_value = hex(int(injection.gold_value, base=16) ^ (1 << injection.bit))
-                    if inject_value == None:
-                        # read value from target
-                        # Can not use existing get_register_value function ("register" is cacheline_XXXX from json)
-                        gold_value = read_register(target_reg)
-                        print("gold_value: ", hex(gold_value))
-                        injection.gold_value = gold_value
-
-                        # flip bit and save new value in inject_value
-                        print("Injection bit: ", (inject_byte << 3) % 32, " / ", inject_bit)
-                        inject_value = inject_value ^ (1 << (((inject_byte << 3) + inject_bit) % 32)) # mod 32 for size of registers (inject_byte is for the whole cache line)
-                        print("inject_value: ", hex(inject_value))
-                        injection.injected_value = inject_value
-
-                    injection.save()
-
-                    # inject "inject value" in target register
-                    # Using this instead of set_register_value()
-                    self.change_register(injection, target_reg, inject_value)
 
                     #############################
 
