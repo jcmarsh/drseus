@@ -319,37 +319,9 @@ class jtag(object):
 
                 print("Injection targets (new DB): ", injection_targets)
 
-                # PrevAccess: returns up to N unique word addresss to l2_set prior to inject_cycles
-                candidate_words = self.PrevAccess(sql_db, inject_cycles, inject_l2_set, ways)
-
-                # Candidate_words are the addresses of the word into which the fault may be injected.
-                #   This addresses are a byte address shifted to remove the byte offset
-                #   Since there are 32 bytes in each cache line, that means >> 5
-
-                print("Candidate word addresses for the injection!: ", candidate_words)
-                print("\tAddress construction: candidate_word (includes l2_set) + inject_byte)")
-                print("\t %X (%X)" % (candidate_words[inject_way] << 5, inject_l2_set << 5))
-                print("\t Byte address: %X (bit %X)"
-                      % ((candidate_words[inject_way] << 5) + inject_byte, inject_bit))
-                print("\t Word address: %X (bit %X)"
-                      % ((candidate_words[inject_way] << 5) + (inject_byte & 28), ((inject_byte & 3) << 3) + inject_bit))
-
-                if inject_way >= len(candidate_words):
-                    print("No fault injected: cache line was not valid.")
-                    return None, None, False, False
-
-                # target picked, so now need all accesses to the word (load and store)
-
-                target_address = (candidate_words[inject_way] << 5) + inject_byte
-                # TODO: this function needs to be tested better <- Is it returning matches for the exact address or the cache line with that address?
-                # NextLdrStr returns (cycle_t, instr_addr) for each following instruction that accesses the target cache line up until the first missed load
-                # or first store (the store is included if the line matches but address does not).
-                injection_targets = sql_db.NextLdrStr(inject_cycles, inject_l2_set, target_address)
-                print("Injection targets: ", injection_targets)
-
                 if (len(injection_targets) == 0):
                     print("No Fault injected: value in cache never read.")
-                    self.db.log_event('Information', 'Debugger', 'Skipping fault injection')
+                    self.db.log_event('Information', 'Debugger', 'Skipping fault injection: not used')
                     return None, None, False, False
 
                 prev_cycle = 0
@@ -420,29 +392,6 @@ class jtag(object):
                     elif "LDC" in instruction:
                         # TODO: Deal with LDC
                         print("Inject into LDC", instruction)
-
-                    elif "STR" in instruction:
-                        # TODO: For stores, may need to inject fault on the saved memory.
-                        # The issue is that the whole cache line is written to memory, and not just the word overwritten by STR.
-                        # NextLdrStr only returns stores if the line matches but not the address
-                        print("Inject into STR", instruction)
-                        print("\tSTR not implemented.")
-
-                    elif "STM" in instruction:
-                        # TODO: Deal with STM
-                        # See notes for STR above
-                        print("Inject into STM", instruction)
-                        print("\tSTM not implemented.")
-
-                    elif "STCL" in instruction:
-                        # TODO: Not sure if this needs to be dealt with... but maybe as STR above
-                        print("Inject into STCL", instruction)
-                        print("\tSTCL not implemented.")
-
-                    elif "STC" in instruction:
-                        # TODO: Same as STCL
-                        print("Inject into STC", instruction)
-                        print("\tSTC not implemented.")
 
                     else:
                         print("ERROR: Not sure what this instruction is: ", instruction)
