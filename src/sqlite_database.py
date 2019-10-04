@@ -285,12 +285,41 @@ class sqlite_database(object):
         c = conn.cursor()
 
         c.execute("SELECT vl_id FROM valid_lines WHERE cycle_in < {} AND l2_set = {} AND way = {} ORDER BY cycle_in DESC".format(inject_cycles, inject_l2_set, inject_way))
-        valid_line_id = c.fetchone()
+        valid_line_id = c.fetchone()[0]
 
         c.close()
         conn.close()
 
         return valid_line_id
+
+    # Returns a list of accesses to a valid_line after the inject_cycle
+    # TODO: Why not return the instructions? See TargetFromInstID called immediately after
+    def GetLineAccesses(self, valid_line_id, inject_cycles):
+        conn = connect(self.database)
+        c = conn.cursor()
+
+        # print("SELECT inst_id FROM accesses WHERE vl_id = {} AND cycle > {} ORDER BY cycle ASC".format(valid_line_id, inject_cycles))
+        c.execute("SELECT inst_id FROM accesses WHERE vl_id = {} AND cycle > {} ORDER BY cycle ASC".format(valid_line_id, inject_cycles))
+        accesses = c.fetchall()
+
+        c.close()
+        conn.close()
+
+        return accesses
+
+    # Returns a target instruction (cycle, pc address, memory access address) given the instruction id
+    def TargetFromInstID(self, inst_id):
+        conn = connect(self.database)
+        c = conn.cursor()
+
+        # print("SELECT cycles_t, address FROM ls_inst WHERE rowid = {}".format(inst_id))
+        c.execute("SELECT cycles_t, address, l_s_addr FROM ls_inst WHERE rowid = {}".format(inst_id))
+        target = c.fetchone()
+
+        c.close()
+        conn.close()
+
+        return target
 
     # Return the number of breakpoints that must be skipped to reach the first execution of the
     #   instruction (address) after a given cycle. Check total cycles to spot multies
@@ -327,7 +356,7 @@ class sqlite_database(object):
         c = conn.cursor()
 
         # c.execute("SELECT * FROM valid_lines WHERE l2_set = {}
-        c.execute("SELECT cycles_t, address, load0_store1, l_s_addr, L2CC_look_d, L2CC_hit_d, instruction FROM ls_inst WHERE cycles_t > {} AND L2_set = {} AND l_s_addr >> 5 = {} ORDER BY cycles_t ASC". format(cycle, cache_set, address >> 5))
+        c.execute("SELECT cycles_t, address, load0_store1, l_s_addr, L2CC_look_d, L2CC_hit_d, instruction FROM ls_inst WHERE cycles_t > {} AND L2_set = {} AND l_s_addr >> 5 = {} ORDER BY cycles_t ASC".format(cycle, cache_set, address >> 5))
         retval = c.fetchall()
 
         # No changes to commit

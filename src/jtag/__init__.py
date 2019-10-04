@@ -218,7 +218,7 @@ class jtag(object):
         if True:
             # TEST CODE: Load a file, read variables (hardcode filename?)
             print("!!!!TEST INJECTION CODE!!!!")
-            inject_config_fn = "./src/jtag/test_injections/fib_rec_injection_test_3.ini"
+            inject_config_fn = "./src/jtag/test_injections/fib_rec_injection_test_1.ini"
             print("Injection file: ", inject_config_fn)
             my_config = configparser.ConfigParser()
             my_config.readfp(open(inject_config_fn))
@@ -303,8 +303,22 @@ class jtag(object):
                     print("The data of the fault injection is not valid. Take no action.")
                     self.db.log_event('Information', 'Debugger', 'Skipping fault injection: not valid')
                     return None, None, False, False
+                print("Valid Line ID: " + str(valid_line))
 
-                # TODO: Change to using new schema, from here
+                # Get the loads that access the cache line
+                # Note: we no longer look at the last store. See issue #5.
+                accesses = sql_db.GetLineAccesses(valid_line, inject_cycles)
+                print("Accesses: ", accesses)
+                injection_targets = []
+                for access in accesses:
+                    potential_target = sql_db.TargetFromInstID(access[0])
+                    target_word = (potential_target[2] >> 2) & 7
+                    inject_word = (inject_byte >> 2)
+                    if (target_word == inject_word):
+                        injection_targets.append(potential_target)
+
+                print("Injection targets (new DB): ", injection_targets)
+
                 # PrevAccess: returns up to N unique word addresss to l2_set prior to inject_cycles
                 candidate_words = self.PrevAccess(sql_db, inject_cycles, inject_l2_set, ways)
 
