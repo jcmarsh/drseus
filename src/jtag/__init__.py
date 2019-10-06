@@ -215,10 +215,10 @@ class jtag(object):
         injections = []
 
         # Check if loading a preset fault from a file (for now hard coded)
-        if True:
+        if False:
             # TEST CODE: Load a file, read variables (hardcode filename?)
             print("!!!!TEST INJECTION CODE!!!!")
-            inject_config_fn = "./src/jtag/test_injections/fib_rec_injection_test_5.ini"
+            inject_config_fn = "./src/jtag/test_injections/fib_rec_injection_test_3.ini"
             print("Injection file: ", inject_config_fn)
             my_config = configparser.ConfigParser()
             my_config.readfp(open(inject_config_fn))
@@ -251,7 +251,10 @@ class jtag(object):
                 for injection_time in sorted(injection_times):
                     injection = choose_injection(self.targets, self.options.selected_target_indices)
                     print(injection)
-                    # TODO: Sigh.
+                    while("field" not in injection or not "data" in injection["field"]):
+                        print("\nInvalid location; picking again.")
+                        injection = choose_injection(self.targets, self.options.selected_target_indices)
+                        print(injection)
                     injection = self.db.result.injection_set.create(success=False, time=injection_time, **injection)
                     injections.append(injection)
 
@@ -295,7 +298,7 @@ class jtag(object):
                 inject_byte = injection.bit >> 3 # offset is in bytes, not bits
                 inject_bit = injection.bit & 7
 
-                print(inject_config_fn, inject_cycles, inject_l2_set, inject_byte, inject_way)
+                print(inject_cycles, inject_l2_set, inject_byte, inject_way)
 
                 # Doesn't account for data that was loaded prior to run (but currently flushing right before run so that is okay.
                 valid_line = sql_db.GetValidLine(inject_cycles, inject_l2_set, inject_way)

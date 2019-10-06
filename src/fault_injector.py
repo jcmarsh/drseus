@@ -349,8 +349,9 @@ class fault_injector(object):
                     if (reset_next_run):
                         # TODO: These should be in one function
                         # A fault was injected, so need to record the results and all that jazz
-                        self.debugger.dut.flush(check_errors=True)
-                        self.debugger.dut.check_output()
+                        with timeout(120):
+                            self.debugger.dut.flush(check_errors=True)
+                        self.debugger.dut.check_output() # TODO: this fails if DUT freezes, stops injections
                         self.db.result.save()
                         self.db.log_result()
                     else:

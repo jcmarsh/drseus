@@ -285,12 +285,15 @@ class sqlite_database(object):
         c = conn.cursor()
 
         c.execute("SELECT vl_id FROM valid_lines WHERE cycle_in < {} AND l2_set = {} AND way = {} ORDER BY cycle_in DESC".format(inject_cycles, inject_l2_set, inject_way))
-        valid_line_id = c.fetchone()[0]
+        valid_line_id = c.fetchone()
 
         c.close()
         conn.close()
 
-        return valid_line_id
+        if valid_line_id == None:
+            return None
+        else:
+            return valid_line_id[0]
 
     # Returns a list of accesses to a valid_line after the inject_cycle
     # TODO: Why not return the instructions? See TargetFromInstID called immediately after
