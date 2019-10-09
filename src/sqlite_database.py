@@ -314,13 +314,13 @@ class sqlite_database(object):
 
         return accesses
 
-    # Returns a target instruction (cycle, pc address, memory access address) given the instruction id
+    # Returns a target instruction (cycle, pc address, memory access address, target_reg) given the instruction id
     def TargetFromInstID(self, inst_id):
         conn = connect(self.database)
         c = conn.cursor()
 
         # print("SELECT cycles_t, address FROM ls_inst WHERE rowid = {}".format(inst_id))
-        c.execute("SELECT cycles_t, address, l_s_addr FROM ls_inst WHERE rowid = {}".format(inst_id))
+        c.execute("SELECT cycles_t, address, l_s_addr, target_reg FROM ls_inst WHERE rowid = {}".format(inst_id))
         target = c.fetchone()
 
         c.close()

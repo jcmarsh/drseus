@@ -215,10 +215,10 @@ class jtag(object):
         injections = []
 
         # Check if loading a preset fault from a file (for now hard coded)
-        if False:
+        if True:
             # TEST CODE: Load a file, read variables (hardcode filename?)
             print("!!!!TEST INJECTION CODE!!!!")
-            inject_config_fn = "./src/jtag/test_injections/fib_rec_injection_test_3.ini"
+            inject_config_fn = "./src/jtag/test_injections/fib_rec_injection_test_ldm_6.ini"
             print("Injection file: ", inject_config_fn)
             my_config = configparser.ConfigParser()
             my_config.readfp(open(inject_config_fn))
@@ -353,10 +353,7 @@ class jtag(object):
                     print("Target Instruction: ", target_reg)
 
                     instruction = (target_reg.split())[2]
-                    # find target
-                    # TODO: How does this change for LDM, for example?
-                    target_reg = (target_reg.split())[3].strip().strip(',')
-                    target_reg = convert_register_alias(target_reg)
+                    target_reg = convert_register_alias(target[3])
 
                     # Get the gold value and the corrupted value to inject (if first time)
                     # let data load (step):
