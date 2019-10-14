@@ -375,15 +375,14 @@ class jtag(object):
 
                     # TODO: Change to case?
                     if "LDR" in instruction:
-                        # TODO: Deal with LDR
                         print("Inject into LDR", instruction)
                         # inject "inject value" in target register
                         # Using this instead of set_register_value()
                         self.change_register(injection, target_reg, inject_value)
 
                     elif "LDM" in instruction:
-                        # TODO: Deal with LDM
                         print("Inject into LDM", instruction)
+                        self.change_register(injection, target_reg, inject_value)
 
                     elif "LDCL" in instruction:
                         # TODO: Deal with LDCL
