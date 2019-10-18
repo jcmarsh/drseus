@@ -174,27 +174,12 @@ class jtag(object):
         event.success = True
         event.save()
 
-    # TODO: Doesn't need to be a class function
-    # TODO: Database schema update
-    # PrevAccess: returns up to N unique word addresss to l2_set prior to inject_cycles
-    def PrevAccess(self, sql_db, cycle, cache_set, assoc):
-        candidates = []
-        current_cycle = cycle;
-        while len(candidates) < assoc:
-            current_cycle, address = sql_db.PreviousLdrStr(current_cycle, cache_set)
-            # Address here has been >> 5 to remove low order bits (line width is 32 bytes)
-            if address == None:
-                return candidates
-            if not (address in candidates):
-                candidates.append(address)
-        return candidates
-
     def read_register(self, target_reg):
         register_value = self.command(command = 'reg %s' % (target_reg), error_message = 'Could not read reg')
         # print("inject target: ", value)
         return int((register_value.split())[2], 16)
 
-    def change_register(self, injection, target_reg, inject_value):
+    def change_register(self, injection, target_reg, inject_value, instruction):
         self.command(command = 'reg %s 0x%s' % (target_reg, hex(inject_value)), #error_message = 'Failed to inject fault in register')
             # expected_output = '%s (/32): 0x%s' % (target_reg, hex(inject_value)),
             error_message = 'Failed to inject fault in register%s' % (target_reg))
@@ -206,10 +191,10 @@ class jtag(object):
             print("Successfully changed register value")
             injection.success = True
             injection.save()
-            self.db.log_event('Information', 'Debugger', 'Fault injected')
+            self.db.log_event('Information', 'Debugger', 'Fault injected: ' + instruction)
         else:
             print("ERROR: Failed to change register value")
-            self.db.log_event('Error', 'Debugger', 'Injection failed')
+            self.db.log_event('Error', 'Debugger', 'Injection failed: ' + instruction)
 
     # Returns: num_register_diffs, num_memory_diffs, persistent_faults, reset_next?
     def inject_faults(self, sql_db):
@@ -381,24 +366,24 @@ class jtag(object):
                         print("Inject into LDR", instruction)
                         # inject "inject value" in target register
                         # Using this instead of set_register_value()
-                        self.change_register(injection, target_reg, inject_value)
+                        self.change_register(injection, target_reg, inject_value, instruction)
 
                     elif "LDM" in instruction:
                         print("Inject into LDM", instruction)
-                        self.change_register(injection, target_reg, inject_value)
+                        self.change_register(injection, target_reg, inject_value, instruction)
 
                     elif "LDCL" in instruction:
                         # TODO: Deal with LDCL better
                         print("Inject into LDCL", instruction)
-                        self.change_register(injection, target_reg, inject_value)
+                        self.change_register(injection, target_reg, inject_value, instruction)
                     elif "LDC" in instruction:
                         # TODO: Deal with LDC better
                         print("Inject into LDC", instruction)
-                        self.change_register(injection, target_reg, inject_value)
+                        self.change_register(injection, target_reg, inject_value, instruction)
 
                     else:
-                        # TODO: event? For the injections above as well?
                         print("ERROR: Not sure what this instruction is: ", instruction)
+                        self.db.log_event('Error', 'Debugger', 'Unknown instruction type: ' + instruction)
 
                     #############################
 
