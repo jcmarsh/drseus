@@ -57,6 +57,8 @@ def convert_register_alias(target_reg):
         convert_reg = 'lr'
     if target_reg == 'r15':
         convert_reg = 'pc'
+    if 'c' in target_reg: # OpenOCD uses d instead of c for floating point registers
+        convert_reg = target_reg.replace('c', 'd')
     print("Target Reg: ", target_reg)
     return convert_reg
 
@@ -218,7 +220,8 @@ class jtag(object):
         if True:
             # TEST CODE: Load a file, read variables (hardcode filename?)
             print("!!!!TEST INJECTION CODE!!!!")
-            inject_config_fn = "./src/jtag/test_injections/fib_rec_injection_test_ldm_6.ini"
+            # inject_config_fn = "./src/jtag/test_injections/fib_rec_injection_test_ldm_6.ini"
+            inject_config_fn = "./src/jtag/test_injections/bsc_1088_ldc_0.ini"
             print("Injection file: ", inject_config_fn)
             my_config = configparser.ConfigParser()
             my_config.readfp(open(inject_config_fn))
@@ -385,14 +388,16 @@ class jtag(object):
                         self.change_register(injection, target_reg, inject_value)
 
                     elif "LDCL" in instruction:
-                        # TODO: Deal with LDCL
+                        # TODO: Deal with LDCL better
                         print("Inject into LDCL", instruction)
-
+                        self.change_register(injection, target_reg, inject_value)
                     elif "LDC" in instruction:
-                        # TODO: Deal with LDC
+                        # TODO: Deal with LDC better
                         print("Inject into LDC", instruction)
+                        self.change_register(injection, target_reg, inject_value)
 
                     else:
+                        # TODO: event? For the injections above as well?
                         print("ERROR: Not sure what this instruction is: ", instruction)
 
                     #############################
