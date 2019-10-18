@@ -202,11 +202,11 @@ class jtag(object):
         injections = []
 
         # Check if loading a preset fault from a file (for now hard coded)
-        if True:
+        if False:
             # TEST CODE: Load a file, read variables (hardcode filename?)
             print("!!!!TEST INJECTION CODE!!!!")
             # inject_config_fn = "./src/jtag/test_injections/fib_rec_injection_test_ldm_6.ini"
-            inject_config_fn = "./src/jtag/test_injections/bsc_1088_ldc_0.ini"
+            inject_config_fn = "./src/jtag/test_injections/bsc_1088_ldcl_0.ini"
             print("Injection file: ", inject_config_fn)
             my_config = configparser.ConfigParser()
             my_config.readfp(open(inject_config_fn))
