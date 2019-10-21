@@ -135,7 +135,10 @@ class openocd(jtag):
             self.telnet.write(bytes('step\n', encoding='utf-8'))
             self.telnet.write(bytes('resume\n', encoding='utf-8'))
             self.telnet.read_until(b'target halted in ARM state due to breakpoint, current mode: System')
-            breaks = breaks -1
+            breaks = breaks - 1
+        # I don't know why this halt is needed, the processor should already be halted...
+        # See bsc_l7_1068_injection_6812.ini for an injection that fails without it.
+        self.telnet.write(bytes('halt\n', encoding='utf-8'))
         self.telnet.write(bytes('rbp ' + address + '\n', encoding='utf-8'))
 
     def single_dut_break(self, address):
