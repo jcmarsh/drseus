@@ -365,8 +365,11 @@ class fault_injector(object):
                             self.db.result.save()
                             self.db.log_result()
                         else:
-                            # TODO: Save that the injection was skipped? Recorded as injection / event
-                            print("Whut?")
+                            # Need to save the outcome category correctly as benign since no fault was injected
+                            self.db.result.outcome_category = 'Benign'
+                            self.db.result.outcome = 'No fault'
+                            self.db.result.save()
+                            self.db.log_result()
                             pass
 
                 except DrSEUsError as error:
