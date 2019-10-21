@@ -206,7 +206,7 @@ class jtag(object):
             # TEST CODE: Load a file, read variables (hardcode filename?)
             print("!!!!TEST INJECTION CODE!!!!")
             # inject_config_fn = "./src/jtag/test_injections/fib_rec_injection_test_ldm_6.ini"
-            # inject_config_fn = "./src/jtag/test_injections/bsc_l7_1068_injection_6812.ini"
+            # inject_config_fn = "./src/jtag/test_injections/bsc_l7_1068_injection_9267.ini"
             inject_config_fn = "./src/jtag/test_injections/fib_rec_injection_test_2.ini"
             print("Injection file: ", inject_config_fn)
             my_config = configparser.ConfigParser()

@@ -126,18 +126,24 @@ class openocd(jtag):
     # Program must be stopped already.
     # Runs until breakpoint address is hit once, and then "times" additional times
     def break_dut_after(self, address, times):
+        # The halts in here shouldn't be needed: the processor is halted after the breakpoint.
+        # And yet I have two examples now that fail without specific halts:
+        #     bsc_l7_1068_injection_6812.ini for an injection that fails without the final halt
+        #     bsc_l7_1068_injection_9267.ini for an injection that fails without halts after read_until
+
         breaks = times
         self.telnet.write(bytes('bp ' + address + ' 1 hw\n', encoding='utf-8'))
         self.telnet.write(bytes('resume\n', encoding='utf-8'))
         self.telnet.read_until(b'target halted in ARM state due to breakpoint, current mode: System')
+        self.telnet.write(bytes('halt\n', encoding='utf-8'))
         breaks = breaks - 1
         while (breaks >= 0):
             self.telnet.write(bytes('step\n', encoding='utf-8'))
             self.telnet.write(bytes('resume\n', encoding='utf-8'))
             self.telnet.read_until(b'target halted in ARM state due to breakpoint, current mode: System')
+            self.telnet.write(bytes('halt\n', encoding='utf-8'))
             breaks = breaks - 1
         # I don't know why this halt is needed, the processor should already be halted...
-        # See bsc_l7_1068_injection_6812.ini for an injection that fails without it.
         self.telnet.write(bytes('halt\n', encoding='utf-8'))
         self.telnet.write(bytes('rbp ' + address + '\n', encoding='utf-8'))
 
