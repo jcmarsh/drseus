@@ -142,6 +142,12 @@ class openocd(jtag):
             self.telnet.write(bytes('resume\n', encoding='utf-8'))
             self.telnet.read_until(b'target halted in ARM state due to breakpoint, current mode: System')
             self.telnet.write(bytes('halt\n', encoding='utf-8'))
+            print('Dems the breaks: ' + str(breaks))
+            if (breaks % 100) == 0:
+                # See qsort_l7_1070_injection_9543.ini for the example the needs this
+                # Apparently breaking / stepping 9k times mess... something up.
+                self.telnet.close()
+                self.telnet.open('localhost', 4444)
             breaks = breaks - 1
         # I don't know why this halt is needed, the processor should already be halted...
         self.telnet.write(bytes('halt\n', encoding='utf-8'))
