@@ -362,12 +362,15 @@ class fault_injector(object):
                             self.debugger.continue_dut()
                             self.debugger.dut.flush(check_errors=True)
                             self.debugger.dut.check_output()
+                            # Overrides what check_output sets (Benign: No Fault)
+                            self.db.result.outcome_category = 'Benign'
+                            self.db.result.outcome = 'Invalid Data'
                             self.db.result.save()
                             self.db.log_result()
                         else:
                             # Need to save the outcome category correctly as benign since no fault was injected
                             self.db.result.outcome_category = 'Benign'
-                            self.db.result.outcome = 'No fault'
+                            self.db.result.outcome = 'Invalid Data'
                             self.db.result.save()
                             self.db.log_result()
                             pass
