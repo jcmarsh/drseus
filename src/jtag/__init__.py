@@ -10,7 +10,7 @@ from time import sleep
 from ..dut import dut
 from ..error import DrSEUsError
 from ..targets import choose_injection, get_targets
-
+from ..timeout import timeout, TimeoutException
 
 def find_all_uarts():
     return sorted(
@@ -210,7 +210,8 @@ class jtag(object):
             # inject_config_fn = "./src/jtag/test_injections/fib_rec_injection_test_ldm_6.ini"
             # inject_config_fn = "./src/jtag/test_injections/bsc_l7_1068_injection_9267.ini"
             # inject_config_fn = "./src/jtag/test_injections/qsort_l7_1070_injection_9543.ini"
-            inject_config_fn = "./src/jtag/test_injections/fib_rec_injection_test_2.ini"
+            # inject_config_fn = "./src/jtag/test_injections/fib_rec_injection_test_2.ini"
+            inject_config_fn = "./src/jtag/test_injections/susan_l7_1071_id_30510.ini"
             print("Injection file: ", inject_config_fn)
             my_config = configparser.ConfigParser()
             my_config.readfp(open(inject_config_fn))
@@ -335,7 +336,12 @@ class jtag(object):
 
                     print("Break address: %X \tSkip Count: %d" % (target[1], skip_count))
                     # Get the DUT to the correct location
-                    self.break_dut_after(str(target[1]), skip_count) # runs current, Removes breakpoint.
+                    try:
+                        with timeout(self.timeout): # TODO aught to be from the drseus command line args
+                            self.break_dut_after(str(target[1]), skip_count) # runs current, Removes breakpoint.
+                    except TimeoutException:
+                        print("Timeout while waiting to read break. Stopping injection.")
+                        break
 
                     # TODO: The target register should really be part of the database
                     # Check program counter (read_register returns an int... using a string for program_counter)

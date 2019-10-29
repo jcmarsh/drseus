@@ -378,14 +378,13 @@ class fault_injector(object):
                     self.db.result.outcome = error.type
                 if self.db.campaign.aux:
                     self.debugger.aux.flush()
-            #self.db.log_result()
-            #if self.options.command == 'inject':
-            #    # TODO: what does close do?
-            #    self.close()
-            #elif self.options.command == 'supervise':
-            #    self.db.result.outcome_category = 'Supervisor'
-            #    self.db.result.outcome = ''
-            #    self.db.result.save()
+
+            if self.options.command == 'inject':
+                self.close()
+            elif self.options.command == 'supervise':
+                self.db.result.outcome_category = 'Supervisor'
+                self.db.result.outcome = ''
+                self.db.result.save()
 
         # Body of inject_campaign(self, iteration_counter):
         try:
