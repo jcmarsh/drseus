@@ -211,7 +211,8 @@ class jtag(object):
             # inject_config_fn = "./src/jtag/test_injections/bsc_l7_1068_injection_9267.ini"
             # inject_config_fn = "./src/jtag/test_injections/qsort_l7_1070_injection_9543.ini"
             # inject_config_fn = "./src/jtag/test_injections/fib_rec_injection_test_2.ini"
-            inject_config_fn = "./src/jtag/test_injections/susan_l7_1071_id_30510.ini"
+            # inject_config_fn = "./src/jtag/test_injections/susan_l7_1071_id_30510.ini"
+            inject_config_fn = "./src/jtag/test_injections/lzo_l7_1077_id_87864.ini"
             print("Injection file: ", inject_config_fn)
             my_config = configparser.ConfigParser()
             my_config.readfp(open(inject_config_fn))
