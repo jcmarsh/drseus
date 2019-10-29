@@ -6,6 +6,7 @@ from termcolor import colored
 from time import sleep
 
 from ..error import DrSEUsError
+from ..timeout import timeout, TimeoutException
 from . import (find_open_port, find_zedboard_jtag_serials,
                find_zedboard_uart_serials, jtag)
 
@@ -134,13 +135,21 @@ class openocd(jtag):
         breaks = times
         self.telnet.write(bytes('bp ' + address + ' 1 hw\n', encoding='utf-8'))
         self.telnet.write(bytes('resume\n', encoding='utf-8'))
-        self.telnet.read_until(b'target halted in ARM state due to breakpoint, current mode: System')
+        try:
+            with timeout(60): # TODO aught to be from the drseus command line args
+                self.telnet.read_until(b'target halted in ARM state due to breakpoint, current mode: System')
+        except TimeoutException:
+            raise
         self.telnet.write(bytes('halt\n', encoding='utf-8'))
         breaks = breaks - 1
         while (breaks >= 0):
             self.telnet.write(bytes('step\n', encoding='utf-8'))
             self.telnet.write(bytes('resume\n', encoding='utf-8'))
-            self.telnet.read_until(b'target halted in ARM state due to breakpoint, current mode: System')
+            try:
+                with timeout(60):
+                    self.telnet.read_until(b'target halted in ARM state due to breakpoint, current mode: System')
+            except TimeoutException:
+                raise
             self.telnet.write(bytes('halt\n', encoding='utf-8'))
             print('Dems the breaks: ' + str(breaks))
             if (breaks % 100) == 0:

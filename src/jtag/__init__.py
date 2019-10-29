@@ -337,8 +337,7 @@ class jtag(object):
                     print("Break address: %X \tSkip Count: %d" % (target[1], skip_count))
                     # Get the DUT to the correct location
                     try:
-                        with timeout(self.timeout): # TODO aught to be from the drseus command line args
-                            self.break_dut_after(str(target[1]), skip_count) # runs current, Removes breakpoint.
+                        self.break_dut_after(str(target[1]), skip_count) # runs current, Removes breakpoint.
                     except TimeoutException:
                         print("Timeout while waiting to read break. Stopping injection.")
                         break
