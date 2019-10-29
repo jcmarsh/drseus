@@ -278,8 +278,6 @@ class fault_injector(object):
             print("Using elf: %s" % ("campaign-data/{}/Attempt2.elf".format(self.options.campaign_id)))
             call(["cp", "campaign-data/{}/Attempt2.elf".format(self.options.campaign_id), "../jtag_eval/xsdb/"])
 
-            # TODO: Start cycle isn't used here?
-            print("Start cycle: %d" % (sql_db.get_start_cycle()))
             if timer is not None:
                 start = perf_counter()
             while True:
@@ -356,20 +354,20 @@ class fault_injector(object):
                         self.db.log_result()
                     else:
                         # No faults where injected
-                        print("SKIPPED INJECTION", iteration_counter.value)
+                        # print("SKIPPED INJECTION", iteration_counter.value)
                         if (iteration_counter.value == 0):
                             # The final injection run should finish execution
                             self.debugger.continue_dut()
                             self.debugger.dut.flush(check_errors=True)
                             self.debugger.dut.check_output()
                             # Overrides what check_output sets (Benign: No Fault)
-                            self.db.result.outcome_category = 'Benign'
+                            self.db.result.outcome_category = 'Benign: Invalid'
                             self.db.result.outcome = 'Invalid Data'
                             self.db.result.save()
                             self.db.log_result()
                         else:
                             # Need to save the outcome category correctly as benign since no fault was injected
-                            self.db.result.outcome_category = 'Benign'
+                            self.db.result.outcome_category = 'Benign: Invalid'
                             self.db.result.outcome = 'Invalid Data'
                             self.db.result.save()
                             self.db.log_result()

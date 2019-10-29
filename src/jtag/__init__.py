@@ -201,8 +201,10 @@ class jtag(object):
         injection_times = []
         injections = []
 
+        Test_Run = False
+
         # Check if loading a preset fault from a file (for now hard coded)
-        if False:
+        if Test_Run:
             # TEST CODE: Load a file, read variables (hardcode filename?)
             print("!!!!TEST INJECTION CODE!!!!")
             # inject_config_fn = "./src/jtag/test_injections/fib_rec_injection_test_ldm_6.ini"
@@ -249,18 +251,18 @@ class jtag(object):
                     injections.append(injection)
 
         print("********************************************************************************")
-        print("Injection times:")
-        print("\t", injection_times)
-        print("Injections:")
-        for injection in injections:
-            print("\tInjection:", injection.target)
-            print("\t", injection)
-            print("\t", injection.bit, " ", injection.field, " ", injection.register)
-        print("Possible targets:")
-        for target in self.targets:
-            print("\tTarget:", target)
-        print("Target Indices?:", self.options.selected_target_indices)
-        print("********************************************************************************")
+        # print("Injection times:")
+        # print("\t", injection_times)
+        # print("Injections:")
+        # for injection in injections:
+        #     print("\tInjection:", injection.target)
+        #     print("\t", injection)
+        #     print("\t", injection.bit, " ", injection.field, " ", injection.register)
+        # print("Possible targets:")
+        # for target in self.targets:
+        #     print("\tTarget:", target)
+        # print("Target Indices?:", self.options.selected_target_indices)
+        # print("********************************************************************************")
 
         if self.db.campaign.command:
             # TODO: Needs to deal with timing better, at least for cache.
@@ -296,12 +298,14 @@ class jtag(object):
                     print("The data of the fault injection is not valid. Take no action.")
                     self.db.log_event('Information', 'Debugger', 'Skipping fault injection: not valid')
                     return None, None, False, False
-                print("Valid Line ID: " + str(valid_line))
+                if Test_Run:
+                    print("Valid Line ID: " + str(valid_line))
 
                 # Get the loads that access the cache line
                 # Note: we no longer look at the last store. See issue #5.
                 accesses = sql_db.GetLineAccesses(valid_line, inject_cycles)
-                print("Accesses: ", accesses)
+                if Test_Run:
+                    print("Accesses: ", accesses)
                 injection_targets = []
                 for access in accesses:
                     potential_target = sql_db.TargetFromInstID(access[0])
@@ -310,7 +314,8 @@ class jtag(object):
                     if (target_word == inject_word):
                         injection_targets.append(potential_target)
 
-                print("Injection targets (new DB): ", injection_targets)
+                if Test_Run:
+                    print("Injection targets (new DB): ", injection_targets)
 
                 if (len(injection_targets) == 0):
                     print("No Fault injected: value in cache never read.")
