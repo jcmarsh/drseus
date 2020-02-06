@@ -1,0 +1,802 @@
+{
+    "jtag": {
+        "targets": {
+            "CPU": {
+                "unused_registers": {
+                    "cpsr": {},
+                    "lr_abt": {},
+                    "lr_fiq": {},
+                    "lr_irq": {},
+                    "lr_mon": {},
+                    "lr_svc": {},
+                    "lr_und": {},
+                    "lr_usr": {},
+                    "pc": {},
+                    "sp_abt": {},
+                    "sp_fiq": {},
+                    "sp_irq": {},
+                    "sp_mon": {},
+                    "sp_svc": {},
+                    "sp_und": {},
+                    "sp_usr": {},
+                    "spsr_abt": {},
+                    "spsr_fiq": {},
+                    "spsr_irq": {},
+                    "spsr_mon": {},
+                    "spsr_svc": {},
+                    "spsr_und": {},
+                    "spsr_usr": {}
+                }
+            }
+        },
+        "unused_targets": [
+            "FPGPR",
+            "GPR",
+            "L2CACHE"
+        ]
+    },
+    "simics": {
+        "targets": {
+            "CPU": {
+                "object": "coretile.mpcore.core",
+                "registers": {
+                    "lr_abt": {
+                        "alias": {
+                            "register": "gprs",
+                            "register_index": [
+                                4,
+                                14
+                            ]
+                        }
+                    },
+                    "lr_fiq": {
+                        "alias": {
+                            "register": "gprs",
+                            "register_index": [
+                                1,
+                                14
+                            ]
+                        }
+                    },
+                    "lr_irq": {
+                        "alias": {
+                            "register": "gprs",
+                            "register_index": [
+                                2,
+                                14
+                            ]
+                        }
+                    },
+                    "lr_mon": {
+                        "alias": {
+                            "register": "gprs",
+                            "register_index": [
+                                0,
+                                14
+                            ]
+                        }
+                    },
+                    "lr_svc": {
+                        "alias": {
+                            "register": "gprs",
+                            "register_index": [
+                                5,
+                                14
+                            ]
+                        }
+                    },
+                    "lr_und": {
+                        "alias": {
+                            "register": "gprs",
+                            "register_index": [
+                                3,
+                                14
+                            ]
+                        }
+                    },
+                    "lr_usr": {
+                        "alias": {
+                            "register": "gprs",
+                            "register_index": [
+                                6,
+                                14
+                            ]
+                        }
+                    },
+                    "pc": {
+                        "alias": {
+                            "register": "gprs",
+                            "register_index": [
+                                6,
+                                15
+                            ]
+                        },
+                        "unused_fields": [
+                            "address[0]"
+                        ]
+                    },
+                    "sp_abt": {
+                        "alias": {
+                            "register": "gprs",
+                            "register_index": [
+                                4,
+                                13
+                            ]
+                        }
+                    },
+                    "sp_fiq": {
+                        "alias": {
+                            "register": "gprs",
+                            "register_index": [
+                                1,
+                                13
+                            ]
+                        }
+                    },
+                    "sp_irq": {
+                        "alias": {
+                            "register": "gprs",
+                            "register_index": [
+                                2,
+                                13
+                            ]
+                        }
+                    },
+                    "sp_mon": {
+                        "alias": {
+                            "register": "gprs",
+                            "register_index": [
+                                0,
+                                13
+                            ]
+                        }
+                    },
+                    "sp_svc": {
+                        "alias": {
+                            "register": "gprs",
+                            "register_index": [
+                                5,
+                                13
+                            ]
+                        }
+                    },
+                    "sp_und": {
+                        "alias": {
+                            "register": "gprs",
+                            "register_index": [
+                                3,
+                                13
+                            ]
+                        }
+                    },
+                    "sp_usr": {
+                        "alias": {
+                            "register": "gprs",
+                            "register_index": [
+                                6,
+                                13
+                            ]
+                        }
+                    },
+                    "spsr_abt": {
+                        "alias": {
+                            "register": "spsr",
+                            "register_index": [
+                                4
+                            ]
+                        }
+                    },
+                    "spsr_fiq": {
+                        "alias": {
+                            "register": "spsr",
+                            "register_index": [
+                                1
+                            ]
+                        }
+                    },
+                    "spsr_irq": {
+                        "alias": {
+                            "register": "spsr",
+                            "register_index": [
+                                2
+                            ]
+                        }
+                    },
+                    "spsr_mon": {
+                        "alias": {
+                            "register": "spsr",
+                            "register_index": [
+                                0
+                            ]
+                        }
+                    },
+                    "spsr_svc": {
+                        "alias": {
+                            "register": "spsr",
+                            "register_index": [
+                                5
+                            ]
+                        }
+                    },
+                    "spsr_und": {
+                        "alias": {
+                            "register": "spsr",
+                            "register_index": [
+                                3
+                            ]
+                        }
+                    },
+                    "spsr_usr": {
+                        "alias": {
+                            "register": "spsr",
+                            "register_index": [
+                                6
+                            ]
+                        }
+                    }
+                }
+            },
+            "FPGPR": {
+                "object": "coretile.mpcore.core",
+                "registers": {
+                    "fpr0": {
+                        "alias": {
+                            "register": "fpgprs",
+                            "register_index": [
+                                0
+                            ]
+                        }
+                    },
+                    "fpr1": {
+                        "alias": {
+                            "register": "fpgprs",
+                            "register_index": [
+                                1
+                            ]
+                        }
+                    },
+                    "fpr10": {
+                        "alias": {
+                            "register": "fpgprs",
+                            "register_index": [
+                                10
+                            ]
+                        }
+                    },
+                    "fpr11": {
+                        "alias": {
+                            "register": "fpgprs",
+                            "register_index": [
+                                11
+                            ]
+                        }
+                    },
+                    "fpr12": {
+                        "alias": {
+                            "register": "fpgprs",
+                            "register_index": [
+                                12
+                            ]
+                        }
+                    },
+                    "fpr13": {
+                        "alias": {
+                            "register": "fpgprs",
+                            "register_index": [
+                                13
+                            ]
+                        }
+                    },
+                    "fpr14": {
+                        "alias": {
+                            "register": "fpgprs",
+                            "register_index": [
+                                14
+                            ]
+                        }
+                    },
+                    "fpr15": {
+                        "alias": {
+                            "register": "fpgprs",
+                            "register_index": [
+                                15
+                            ]
+                        }
+                    },
+                    "fpr16": {
+                        "alias": {
+                            "register": "fpgprs",
+                            "register_index": [
+                                16
+                            ]
+                        }
+                    },
+                    "fpr17": {
+                        "alias": {
+                            "register": "fpgprs",
+                            "register_index": [
+                                17
+                            ]
+                        }
+                    },
+                    "fpr18": {
+                        "alias": {
+                            "register": "fpgprs",
+                            "register_index": [
+                                18
+                            ]
+                        }
+                    },
+                    "fpr19": {
+                        "alias": {
+                            "register": "fpgprs",
+                            "register_index": [
+                                19
+                            ]
+                        }
+                    },
+                    "fpr2": {
+                        "alias": {
+                            "register": "fpgprs",
+                            "register_index": [
+                                2
+                            ]
+                        }
+                    },
+                    "fpr20": {
+                        "alias": {
+                            "register": "fpgprs",
+                            "register_index": [
+                                20
+                            ]
+                        }
+                    },
+                    "fpr21": {
+                        "alias": {
+                            "register": "fpgprs",
+                            "register_index": [
+                                21
+                            ]
+                        }
+                    },
+                    "fpr22": {
+                        "alias": {
+                            "register": "fpgprs",
+                            "register_index": [
+                                22
+                            ]
+                        }
+                    },
+                    "fpr23": {
+                        "alias": {
+                            "register": "fpgprs",
+                            "register_index": [
+                                23
+                            ]
+                        }
+                    },
+                    "fpr24": {
+                        "alias": {
+                            "register": "fpgprs",
+                            "register_index": [
+                                24
+                            ]
+                        }
+                    },
+                    "fpr25": {
+                        "alias": {
+                            "register": "fpgprs",
+                            "register_index": [
+                                25
+                            ]
+                        }
+                    },
+                    "fpr26": {
+                        "alias": {
+                            "register": "fpgprs",
+                            "register_index": [
+                                26
+                            ]
+                        }
+                    },
+                    "fpr27": {
+                        "alias": {
+                            "register": "fpgprs",
+                            "register_index": [
+                                27
+                            ]
+                        }
+                    },
+                    "fpr28": {
+                        "alias": {
+                            "register": "fpgprs",
+                            "register_index": [
+                                28
+                            ]
+                        }
+                    },
+                    "fpr29": {
+                        "alias": {
+                            "register": "fpgprs",
+                            "register_index": [
+                                29
+                            ]
+                        }
+                    },
+                    "fpr3": {
+                        "alias": {
+                            "register": "fpgprs",
+                            "register_index": [
+                                3
+                            ]
+                        }
+                    },
+                    "fpr30": {
+                        "alias": {
+                            "register": "fpgprs",
+                            "register_index": [
+                                30
+                            ]
+                        }
+                    },
+                    "fpr31": {
+                        "alias": {
+                            "register": "fpgprs",
+                            "register_index": [
+                                31
+                            ]
+                        }
+                    },
+                    "fpr4": {
+                        "alias": {
+                            "register": "fpgprs",
+                            "register_index": [
+                                4
+                            ]
+                        }
+                    },
+                    "fpr5": {
+                        "alias": {
+                            "register": "fpgprs",
+                            "register_index": [
+                                5
+                            ]
+                        }
+                    },
+                    "fpr6": {
+                        "alias": {
+                            "register": "fpgprs",
+                            "register_index": [
+                                6
+                            ]
+                        }
+                    },
+                    "fpr7": {
+                        "alias": {
+                            "register": "fpgprs",
+                            "register_index": [
+                                7
+                            ]
+                        }
+                    },
+                    "fpr8": {
+                        "alias": {
+                            "register": "fpgprs",
+                            "register_index": [
+                                8
+                            ]
+                        }
+                    },
+                    "fpr9": {
+                        "alias": {
+                            "register": "fpgprs",
+                            "register_index": [
+                                9
+                            ]
+                        }
+                    }
+                }
+            },
+            "GPR": {
+                "object": "coretile.mpcore.core",
+                "registers": {
+                    "r0": {
+                        "alias": {
+                            "register": "gprs",
+                            "register_index": [
+                                6,
+                                0
+                            ]
+                        }
+                    },
+                    "r1": {
+                        "alias": {
+                            "register": "gprs",
+                            "register_index": [
+                                6,
+                                1
+                            ]
+                        }
+                    },
+                    "r10": {
+                        "alias": {
+                            "register": "gprs",
+                            "register_index": [
+                                6,
+                                10
+                            ]
+                        }
+                    },
+                    "r10_fiq": {
+                        "alias": {
+                            "register": "gprs",
+                            "register_index": [
+                                1,
+                                10
+                            ]
+                        }
+                    },
+                    "r11": {
+                        "alias": {
+                            "register": "gprs",
+                            "register_index": [
+                                6,
+                                11
+                            ]
+                        }
+                    },
+                    "r11_fiq": {
+                        "alias": {
+                            "register": "gprs",
+                            "register_index": [
+                                1,
+                                11
+                            ]
+                        }
+                    },
+                    "r12": {
+                        "alias": {
+                            "register": "gprs",
+                            "register_index": [
+                                6,
+                                12
+                            ]
+                        }
+                    },
+                    "r12_fiq": {
+                        "alias": {
+                            "register": "gprs",
+                            "register_index": [
+                                1,
+                                12
+                            ]
+                        }
+                    },
+                    "r2": {
+                        "alias": {
+                            "register": "gprs",
+                            "register_index": [
+                                6,
+                                2
+                            ]
+                        }
+                    },
+                    "r3": {
+                        "alias": {
+                            "register": "gprs",
+                            "register_index": [
+                                6,
+                                3
+                            ]
+                        }
+                    },
+                    "r4": {
+                        "alias": {
+                            "register": "gprs",
+                            "register_index": [
+                                6,
+                                4
+                            ]
+                        }
+                    },
+                    "r5": {
+                        "alias": {
+                            "register": "gprs",
+                            "register_index": [
+                                6,
+                                5
+                            ]
+                        }
+                    },
+                    "r6": {
+                        "alias": {
+                            "register": "gprs",
+                            "register_index": [
+                                6,
+                                6
+                            ]
+                        }
+                    },
+                    "r7": {
+                        "alias": {
+                            "register": "gprs",
+                            "register_index": [
+                                6,
+                                7
+                            ]
+                        }
+                    },
+                    "r8": {
+                        "alias": {
+                            "register": "gprs",
+                            "register_index": [
+                                6,
+                                8
+                            ]
+                        }
+                    },
+                    "r8_fiq": {
+                        "alias": {
+                            "register": "gprs",
+                            "register_index": [
+                                1,
+                                8
+                            ]
+                        }
+                    },
+                    "r9": {
+                        "alias": {
+                            "register": "gprs",
+                            "register_index": [
+                                6,
+                                9
+                            ]
+                        }
+                    },
+                    "r9_fiq": {
+                        "alias": {
+                            "register": "gprs",
+                            "register_index": [
+                                1,
+                                9
+                            ]
+                        }
+                    }
+                }
+            },
+            "L2CACHE": {
+                "object": "l2_cache"
+            }
+        }
+    },
+    "targets": {
+        "CPU": {
+            "core": true,
+            "registers": {
+                "cpsr": {},
+                "lr_abt": {},
+                "lr_fiq": {},
+                "lr_irq": {},
+                "lr_mon": {},
+                "lr_svc": {},
+                "lr_und": {},
+                "lr_usr": {},
+                "pc": {
+                    "fields": [
+                        [
+                            "address[1:31]",
+                            [
+                                1,
+                                31
+                            ]
+                        ],
+                        [
+                            "address[0]",
+                            [
+                                0,
+                                0
+                            ]
+                        ]
+                    ]
+                },
+                "sp_abt": {},
+                "sp_fiq": {},
+                "sp_irq": {},
+                "sp_mon": {},
+                "sp_svc": {},
+                "sp_und": {},
+                "sp_usr": {},
+                "spsr_abt": {},
+                "spsr_fiq": {},
+                "spsr_irq": {},
+                "spsr_mon": {},
+                "spsr_svc": {},
+                "spsr_und": {},
+                "spsr_usr": {}
+            }
+        },
+        "FPGPR": {
+            "registers": {
+                "fpr0": {},
+                "fpr1": {},
+                "fpr10": {},
+                "fpr11": {},
+                "fpr12": {},
+                "fpr13": {},
+                "fpr14": {},
+                "fpr15": {},
+                "fpr16": {},
+                "fpr17": {},
+                "fpr18": {},
+                "fpr19": {},
+                "fpr2": {},
+                "fpr20": {},
+                "fpr21": {},
+                "fpr22": {},
+                "fpr23": {},
+                "fpr24": {},
+                "fpr25": {},
+                "fpr26": {},
+                "fpr27": {},
+                "fpr28": {},
+                "fpr29": {},
+                "fpr3": {},
+                "fpr30": {},
+                "fpr31": {},
+                "fpr4": {},
+                "fpr5": {},
+                "fpr6": {},
+                "fpr7": {},
+                "fpr8": {},
+                "fpr9": {}
+            }
+        },
+        "GPR": {
+            "registers": {
+                "r0": {},
+                "r1": {},
+                "r10": {},
+                "r10_fiq": {},
+                "r11": {},
+                "r11_fiq": {},
+                "r12": {},
+                "r12_fiq": {},
+                "r2": {},
+                "r3": {},
+                "r4": {},
+                "r5": {},
+                "r6": {},
+                "r7": {},
+                "r8": {},
+                "r8_fiq": {},
+                "r9": {},
+                "r9_fiq": {}
+            }
+        },
+        "L2CACHE": {
+            "registers": {
+                "lines": {
+                    "count": [
+                        16384,
+                        5
+                    ],
+                    "fields": {
+                        "data": {
+                            "bits": 256,
+                            "index": 4
+                        },
+                        "status": {
+                            "bits": 2,
+                            "index": 0
+                        },
+                        "tag": {
+                            "bits": 64,
+                            "index": 1
+                        }
+                    }
+                }
+            },
+            "type": "gcache"
+        }
+    }
+}
