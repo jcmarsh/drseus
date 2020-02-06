@@ -56,6 +56,8 @@ class simics(object):
             self.board = 'p2020rdb'
         elif self.db.campaign.architecture == 'a9':
             self.board = 'a9x2'
+        elif self.db.campaign.architecture == 'juno':
+            self.board = 'juno'
         self.set_targets(self.db.campaign.architecture)
 
     def __str__(self):

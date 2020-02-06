@@ -1,13 +1,10 @@
 --timeout
 5000
-@conf/new/a9
+@conf/new/juno
 --cmd
-TODO: Can I redirect here? ./benchmark_name &> results.out
---files
-benchmark_name... TODO
-TODO: Don't need input (packaged in binary)
+echo happy > out.txt
 --output_file
-TODO: None?
+out.txt
 --simics
 --ckpts
-TODO: Checkpoints
+2
