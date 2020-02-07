@@ -56,7 +56,7 @@ class simics(object):
             self.board = 'p2020rdb'
         elif self.db.campaign.architecture == 'a9':
             self.board = 'a9x2'
-        elif self.db.campaign.architecture == 'juno':
+        elif self.db.campaign.architecture == 'qsp-arm':
             self.board = 'qsp-arm'
         self.set_targets(self.db.campaign.architecture)
 
@@ -99,7 +99,7 @@ class simics(object):
                 break
         # TODO: Simics fails down there if no license \/
         if self.db.campaign.caches:
-                self.__command('disable-multithreading')
+                self.__command('disable-multithreading') # TODO: deprecated, disable-multimachine-accelerator
                 self.__command('dstc-disable')
                 self.__command('istc-disable')
         if checkpoint is None:
