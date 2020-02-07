@@ -109,11 +109,17 @@ class simics(object):
                     self.board, '-ethernet' if self.db.campaign.aux else ''))
             # TODO: Is the use of caches here conflated with p2020? Do I need to copy caches.py?
             if self.db.campaign.caches:
-                self.__command('DUT_p2020rdb.soc.cpu[0].instruction-fetch-mode '
-                               'mode = instruction-fetch-trace')
-                self.__command('DUT_p2020rdb.soc.cpu[1].instruction-fetch-mode '
-                               'mode = instruction-fetch-trace')
-                self.__command('run-python-file simics-p2020rdb/caches.py')
+                if self.board == 'p2020rdb':
+                    self.__command('DUT_p2020rdb.soc.cpu[0].instruction-fetch-mode '
+                                   'mode = instruction-fetch-trace')
+                    self.__command('DUT_p2020rdb.soc.cpu[1].instruction-fetch-mode '
+                                   'mode = instruction-fetch-trace')
+                    self.__command('run-python-file simics-p2020rdb/caches.py')
+                else:
+                    # Putting the qsp-arm commands here
+                    self.__command('board.cpu[0].instruction-fetch-mode '
+                                   'mode = instruction-fetch-trace')
+                    self.__command('run-python-file simics-qsp-arm/caches.py')
         else:
             buff = self.__command('read-configuration {}'.format(checkpoint))
             if self.db.campaign.caches:
