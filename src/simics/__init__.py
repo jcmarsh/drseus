@@ -57,7 +57,7 @@ class simics(object):
         elif self.db.campaign.architecture == 'a9':
             self.board = 'a9x2'
         elif self.db.campaign.architecture == 'juno':
-            self.board = 'juno'
+            self.board = 'qsp-arm'
         self.set_targets(self.db.campaign.architecture)
 
     def __str__(self):
@@ -107,6 +107,7 @@ class simics(object):
             buff = self.__command(
                 'run-command-file simics-{0}/{0}-linux{1}.simics'.format(
                     self.board, '-ethernet' if self.db.campaign.aux else ''))
+            # TODO: Is the use of caches here conflated with p2020? Do I need to copy caches.py?
             if self.db.campaign.caches:
                 self.__command('DUT_p2020rdb.soc.cpu[0].instruction-fetch-mode '
                                'mode = instruction-fetch-trace')
