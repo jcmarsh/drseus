@@ -38,7 +38,7 @@ class fault_injector(object):
         self.options = options
         self.db = database(options)
         if self.db.campaign.simics and self.db.campaign.architecture in \
-                ['a9', 'p2020']:
+                ['a9', 'p2020', 'qsp-arm']:
             self.debugger = simics(self.db, options)
         elif options.jtag and self.db.campaign.architecture == 'a9':
             self.debugger = openocd(self.db, options, power_switch)

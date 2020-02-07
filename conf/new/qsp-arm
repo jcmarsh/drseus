@@ -1,0 +1,8 @@
+@conf/qsp-arm
+new
+--arch
+qsp-arm
+--simics
+--caches
+--ckpts
+50
