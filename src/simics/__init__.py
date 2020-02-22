@@ -142,15 +142,20 @@ class simics(object):
         ssh_ports = []
         for line in buff.split('\n'):
             if 'pseudo device opened: /dev/pts/' in line:
+                print("YES!")
                 if checkpoint is None:
                     serial_ports.append(line.split(':')[1].strip())
+                    print("Serial ports (no checkpoint): ", serial_ports)
                 else:
                     if 'AUX_' in line:
                         serial_ports[1] = line.split(':')[1].strip()
+                        print("Serial port (AUX): " + serial_ports[1])
                     else:
                         serial_ports[0] = line.split(':')[1].strip()
+                        print("Serial port: " + serial_ports[0])
                 found_settings += 1
             elif 'Host TCP port' in line:
+                print("TCP Port!")
                 ssh_ports.append(int(line.split('->')[0].split()[-1]))
                 found_settings += 1
             if not self.db.campaign.aux and found_settings == 2:
@@ -181,6 +186,32 @@ class simics(object):
                                        'setenv bootargs root=/dev/ram rw '
                                        'console=$consoledev,$baudrate; '
                                        'bootm ef080000 10000000 ef040000; ')
+        elif self.board == 'qsp-arm':
+            # TODO: Probably wrong
+            print("Yeah, doing things for the qsp-arm")
+            self.options.aux_prompt = self.options.dut_prompt = 'root@qsp:~#'
+            if self.options.dut_uboot:
+                print("Um, it's a dut_uboot thing?")
+                self.options.dut_uboot += '; '
+            # TODO: I'm like 90% sure that this is wrong
+            self.options.dut_uboot += ('setenv ethaddr 00:01:af:07:9b:8a; '
+                                       'setenv eth1addr 00:01:af:07:9b:8b; '
+                                       'setenv eth2addr 00:01:af:07:9b:8c; '
+                                       'setenv consoledev ttyS0; '
+                                       'setenv bootargs root=/dev/ram rw '
+                                       'console=$consoledev,$baudrate; '
+                                       'bootm 00000000 10000000 00000000')
+            if self.options.aux_uboot:
+                print("Um, it's an aux thing?")
+                self.options.aux_uboot += '; '
+            # TODO: Surely wrong
+            self.options.aux_uboot += ('setenv ethaddr 00:01:af:07:9b:8d; '
+                                       'setenv eth1addr 00:01:af:07:9b:8e; '
+                                       'setenv eth2addr 00:01:af:07:9b:8f; '
+                                       'setenv consoledev ttyS0; '
+                                       'setenv bootargs root=/dev/ram rw '
+                                       'console=$consoledev,$baudrate; '
+                                       'bootm 00000000 10000000 00000000; ')
         elif self.board == 'a9x2':
             self.options.aux_prompt = self.options.dut_prompt = '\n#'
             if self.options.dut_uboot:
@@ -193,6 +224,7 @@ class simics(object):
             self.options.aux_uboot += ('setenv bootargs console=ttyAMA0 '
                                        'root=/dev/ram0 rw;'
                                        'bootm 0x40800000 0x70000000')
+
         self.options.dut_serial_port = serial_ports[0]
         self.options.dut_ip_address = '10.10.0.100'
         self.options.dut_scp_port = ssh_ports[0]
@@ -212,6 +244,9 @@ class simics(object):
                 if self.db.campaign.aux:
                     self.__command('AUX_p2020rdb_1.soc.phys_mem.load-file '
                                    '$initrd_image $initrd_addr')
+            elif self.board == 'qsp-arm':
+                # TODO: Need to do things here, probably...
+                pass
             elif self.board == 'a9x2':
                 self.__command('DUT_a9x2.coretile.mpcore.phys_mem.load-file '
                                '$kernel_image $kernel_addr')
