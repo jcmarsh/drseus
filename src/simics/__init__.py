@@ -107,7 +107,6 @@ class simics(object):
             buff = self.__command(
                 'run-command-file simics-{0}/{0}-linux{1}.simics'.format(
                     self.board, '-ethernet' if self.db.campaign.aux else ''))
-            # TODO: Is the use of caches here conflated with p2020? Do I need to copy caches.py?
             if self.db.campaign.caches:
                 if self.board == 'p2020rdb':
                     self.__command('DUT_p2020rdb.soc.cpu[0].instruction-fetch-mode '
@@ -199,8 +198,8 @@ class simics(object):
                                        'setenv eth2addr 00:01:af:07:9b:8c; '
                                        'setenv consoledev ttyS0; '
                                        'setenv bootargs root=/dev/ram rw '
-                                       'console=$consoledev,$baudrate; '
-                                       'bootm 00000000 10000000 00000000')
+                                       'console=$consoledev,$baudrate;'
+                                       'bootm 0x00800000')
             if self.options.aux_uboot:
                 print("Um, it's an aux thing?")
                 self.options.aux_uboot += '; '
@@ -261,6 +260,7 @@ class simics(object):
             if self.db.campaign.aux:
                 aux_process = Thread(
                     target=self.aux.do_login,
+                    # Maybe:  or self.board == 'qsp-arm')
                     kwargs={'change_prompt': self.board == 'a9x2',
                             'flush': False})
                 aux_process.start()
