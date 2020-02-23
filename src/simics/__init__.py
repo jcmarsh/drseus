@@ -199,7 +199,7 @@ class simics(object):
                                        'setenv consoledev ttyS0; '
                                        'setenv bootargs root=/dev/ram rw '
                                        'console=$consoledev,$baudrate;'
-                                       'bootm 0x00800000')
+                                       'bootm 0x00800000 - 0x00700000')
             if self.options.aux_uboot:
                 print("Um, it's an aux thing?")
                 self.options.aux_uboot += '; '
