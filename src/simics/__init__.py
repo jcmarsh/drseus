@@ -198,8 +198,8 @@ class simics(object):
                                        'setenv eth2addr 00:01:af:07:9b:8c; '
                                        'setenv consoledev ttyS0; '
                                        'setenv bootargs root=/dev/ram rw '
-                                       'console=$consoledev,$baudrate;'
-                                       'bootm 0x00800000 - 0x00700000')
+                                       'console=$consoledev,$baudrate; '
+                                       'bootm 0x00800000 0x10000000 0x00700000')
             if self.options.aux_uboot:
                 print("Um, it's an aux thing?")
                 self.options.aux_uboot += '; '
@@ -210,7 +210,7 @@ class simics(object):
                                        'setenv consoledev ttyS0; '
                                        'setenv bootargs root=/dev/ram rw '
                                        'console=$consoledev,$baudrate; '
-                                       'bootm 00000000 10000000 00000000; ')
+                                       'bootm 0x00800000 - 0x00700000; ')
         elif self.board == 'a9x2':
             self.options.aux_prompt = self.options.dut_prompt = '\n#'
             if self.options.dut_uboot:
@@ -245,6 +245,12 @@ class simics(object):
                                    '$initrd_image $initrd_addr')
             elif self.board == 'qsp-arm':
                 # TODO: Need to do things here, probably...
+                self.__command('$root_fs = "/dev/ram"')
+                self.__command('$initrd_image = "%simics%/targets/qsp-arm/images/rootfs.ext2"')
+                self.__command('$initrd_addr = 0x10000000')
+                self.__command('$bash_prompt = "root@qsp-arm:~#"')
+                self.__command('$passwd = ""')
+                self.__command('board.phys_mem.load-file $initrd_image $initrd_addr')
                 pass
             elif self.board == 'a9x2':
                 self.__command('DUT_a9x2.coretile.mpcore.phys_mem.load-file '
@@ -256,6 +262,7 @@ class simics(object):
                                    'load-file $kernel_image $kernel_addr')
                     self.__command('AUX_a9x2_1.coretile.mpcore.phys_mem.'
                                    'load-file $initrd_image $initrd_addr')
+            print("Continuing with the thing you were doing.")
             self.continue_dut()
             if self.db.campaign.aux:
                 aux_process = Thread(
