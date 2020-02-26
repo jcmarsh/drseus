@@ -193,24 +193,24 @@ class simics(object):
                 print("Um, it's a dut_uboot thing?")
                 self.options.dut_uboot += '; '
             # TODO: I'm like 90% sure that this is wrong
-            self.options.dut_uboot += ('setenv ethaddr 00:01:af:07:9b:8a; '
-                                       'setenv eth1addr 00:01:af:07:9b:8b; '
-                                       'setenv eth2addr 00:01:af:07:9b:8c; '
-                                       'setenv consoledev ttyS0; '
-                                       'setenv bootargs root=/dev/ram rw '
-                                       'console=$consoledev,$baudrate; '
-                                       'bootm 0x00800000 0x10000000 0x00700000')
+            #self.options.dut_uboot += ('setenv ethaddr 00:01:af:07:9b:8a; '
+            #                           'setenv eth1addr 00:01:af:07:9b:8b; '
+            #                           'setenv eth2addr 00:01:af:07:9b:8c; '
+            #                           'setenv consoledev ttyS0; '
+            #                           'setenv bootargs root=/dev/ram rw '
+            #                           'console=$consoledev,$baudrate; '
+            #                           'bootm 0x00800000 0x10000000 0x00700000')
             if self.options.aux_uboot:
                 print("Um, it's an aux thing?")
                 self.options.aux_uboot += '; '
             # TODO: Surely wrong
-            self.options.aux_uboot += ('setenv ethaddr 00:01:af:07:9b:8d; '
-                                       'setenv eth1addr 00:01:af:07:9b:8e; '
-                                       'setenv eth2addr 00:01:af:07:9b:8f; '
-                                       'setenv consoledev ttyS0; '
-                                       'setenv bootargs root=/dev/ram rw '
-                                       'console=$consoledev,$baudrate; '
-                                       'bootm 0x00800000 - 0x00700000; ')
+            #self.options.aux_uboot += ('setenv ethaddr 00:01:af:07:9b:8d; '
+            #                           'setenv eth1addr 00:01:af:07:9b:8e; '
+            #                           'setenv eth2addr 00:01:af:07:9b:8f; '
+            #                           'setenv consoledev ttyS0; '
+            #                           'setenv bootargs root=/dev/ram rw '
+            #                           'console=$consoledev,$baudrate; '
+            #                           'bootm 0x00800000 - 0x00700000; ')
         elif self.board == 'a9x2':
             self.options.aux_prompt = self.options.dut_prompt = '\n#'
             if self.options.dut_uboot:
@@ -245,12 +245,12 @@ class simics(object):
                                    '$initrd_image $initrd_addr')
             elif self.board == 'qsp-arm':
                 # TODO: Need to do things here, probably...
-                self.__command('$root_fs = "/dev/ram"')
-                self.__command('$initrd_image = "%simics%/targets/qsp-arm/images/rootfs.ext2"')
-                self.__command('$initrd_addr = 0x10000000')
-                self.__command('$bash_prompt = "root@qsp-arm:~#"')
-                self.__command('$passwd = ""')
-                self.__command('board.phys_mem.load-file $initrd_image $initrd_addr')
+                #self.__command('$root_fs = "/dev/ram"')
+                #self.__command('$initrd_image = "%simics%/targets/qsp-arm/images/rootfs.ext2"')
+                #self.__command('$initrd_addr = 0x10000000')
+                #self.__command('$bash_prompt = "root@qsp-arm:~#"')
+                #self.__command('$passwd = ""')
+                #self.__command('board.phys_mem.load-file $initrd_image $initrd_addr')
                 pass
             elif self.board == 'a9x2':
                 self.__command('DUT_a9x2.coretile.mpcore.phys_mem.load-file '
@@ -265,14 +265,17 @@ class simics(object):
             print("Continuing with the thing you were doing.")
             self.continue_dut()
             if self.db.campaign.aux:
+                # Not run for qsp-arm
                 aux_process = Thread(
                     target=self.aux.do_login,
                     # Maybe:  or self.board == 'qsp-arm')
                     kwargs={'change_prompt': self.board == 'a9x2',
                             'flush': False})
                 aux_process.start()
+            print("Ahh...")
             self.dut.do_login(change_prompt=(self.board == 'a9x2'),
                               flush=self.db.campaign.caches)
+            print("Did the login...")
             if self.db.campaign.aux:
                 aux_process.join()
         else:
