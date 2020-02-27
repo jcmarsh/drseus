@@ -116,8 +116,9 @@ class simics(object):
                     self.__command('run-python-file simics-p2020rdb/caches.py')
                 else:
                     # Putting the qsp-arm commands here
-                    self.__command('board.cpu[0].instruction-fetch-mode '
-                                   'mode = instruction-fetch-trace')
+                    # TODO: this line seems to kill it
+                    #self.__command('board.cpu[0].instruction-fetch-mode '
+                    #               'mode = instruction-fetch-trace')
                     self.__command('run-python-file simics-qsp-arm/caches.py')
         else:
             buff = self.__command('read-configuration {}'.format(checkpoint))
@@ -193,6 +194,8 @@ class simics(object):
                 print("Um, it's a dut_uboot thing?")
                 self.options.dut_uboot += '; '
             # TODO: I'm like 90% sure that this is wrong
+            # May need to revisit to set up the networking correctly.
+            # To test faster, turn back on multi-threading and related
             #self.options.dut_uboot += ('setenv ethaddr 00:01:af:07:9b:8a; '
             #                           'setenv eth1addr 00:01:af:07:9b:8b; '
             #                           'setenv eth2addr 00:01:af:07:9b:8c; '
