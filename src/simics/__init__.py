@@ -265,7 +265,6 @@ class simics(object):
                                    'load-file $kernel_image $kernel_addr')
                     self.__command('AUX_a9x2_1.coretile.mpcore.phys_mem.'
                                    'load-file $initrd_image $initrd_addr')
-            print("Continuing with the thing you were doing.")
             self.continue_dut()
             if self.db.campaign.aux:
                 # Not run for qsp-arm
@@ -275,7 +274,6 @@ class simics(object):
                     kwargs={'change_prompt': self.board == 'a9x2',
                             'flush': False})
                 aux_process.start()
-            print("Ahh...")
             self.dut.do_login(change_prompt=(self.board == 'a9x2'),
                               flush=self.db.campaign.caches)
             print("Did the login...")
