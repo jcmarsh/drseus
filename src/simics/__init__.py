@@ -189,7 +189,7 @@ class simics(object):
         elif self.board == 'qsp-arm':
             # TODO: Probably wrong
             print("Yeah, doing things for the qsp-arm")
-            self.options.aux_prompt = self.options.dut_prompt = 'root@qsp:~#'
+            self.options.aux_prompt = self.options.dut_prompt = '[root@buildroot ~]#'
             if self.options.dut_uboot:
                 print("Um, it's a dut_uboot thing?")
                 self.options.dut_uboot += '; '
