@@ -1,0 +1,7 @@
+@conf/new/qsp-arm
+--cmd
+echo "Hello DrSEUs" > out.txt
+--files
+./test_run/in.txt
+--output_file
+out.txt
