@@ -368,6 +368,9 @@ class dut(object):
                         'Information', 'DUT' if not self.aux else 'AUX',
                         'Sent files using FTP', ', '.join(files))
 
+        def send_simicsfs():
+            print("Attempting to send files via simicsfs...")
+
         def send_scp():
             if self.db.campaign.caches:
                 timeout_ = 1200
@@ -472,6 +475,8 @@ class dut(object):
             send_socket()
         elif self.options.vxworks:
             send_ftp()
+        elif self.options.simicsfs:
+            send_simicsfs()
         else:
             send_scp()
         if rename_gold:
@@ -829,6 +834,7 @@ class dut(object):
             self.command('echo "ssh-rsa {}" > ~/.ssh/authorized_keys'.format(
                 self.rsakey.get_base64()), flush=flush)
         if self.set_ip or self.db.campaign.simics and not self.options.vxworks:
+            # TODO: this doesn't need to be done for the simics qsp-arm setup
             self.command('ip addr add {}/24 dev eth0'.format(self.ip_address),
                          flush=flush)
             self.command('ip link set eth0 up', flush=flush)

@@ -1,5 +1,6 @@
 @conf/qsp-arm
 --no_rsa
+--simicsfs
 new
 --arch
 qsp-arm

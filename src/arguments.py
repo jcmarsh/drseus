@@ -74,6 +74,11 @@ parser.add_argument(
     dest='vxworks',
     help='device runs vxworks instead of linux')
 parser.add_argument(
+    '--simicsfs',
+    action='store_true',
+    dest='simicsfs',
+    help='use simicsfs to transfer files with host')
+parser.add_argument(
     '--error_msg',
     nargs='+',
     dest='error_messages',
