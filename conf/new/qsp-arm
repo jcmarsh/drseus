@@ -1,4 +1,5 @@
 @conf/qsp-arm
+--no_rsa
 new
 --arch
 qsp-arm
