@@ -370,6 +370,18 @@ class dut(object):
 
         def send_simicsfs():
             print("Attempting to send files via simicsfs...")
+            # mount /host/
+            self.command('mount /host', flush=True)
+            # remove exisiting files in simicsfs_root first?
+            for f in files:
+                print(f)
+                copy(f, "./simicsfs_root/") # copy from host to simicfs (/host on sim)
+            print("Do something with those...")
+            # move from /host/ on sim to home?
+            self.command('mv /host/* ./', flush=True)
+            self.command('ls', flush=True)
+            # Host: Need to move the files to the host directory
+            # Sim: copy from /host/
 
         def send_scp():
             if self.db.campaign.caches:
