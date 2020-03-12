@@ -39,7 +39,7 @@ def tree():
 
 
 missing_total = 0
-for device in ['a9', 'p2020', 'qsp-arm']:
+for device in ['a9', 'p2020', 'qsp-arm', 'qsp-ppc']:
     jtag_targets = load_targets(device, 'jtag')
     simics_targets = load_targets(device, 'simics')
 
@@ -784,7 +784,7 @@ for device in ['a9', 'p2020', 'qsp-arm']:
 
 print('\ntotal missing registers:', missing_total)
 
-for device in ['a9', 'p2020', 'qsp-arm']:
+for device in ['a9', 'p2020', 'qsp-arm', 'qsp-ppc']:
     merged_targets = load_targets('', device)
     for type_ in 'jtag', 'simics':
         for target in list(merged_targets[type_]['targets'].keys()):
