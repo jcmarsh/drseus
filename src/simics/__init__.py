@@ -116,7 +116,7 @@ class simics(object):
                     self.__command('run-python-file simics-p2020rdb/caches.py')
                 else:
                     # Putting the qsp-arm commands here
-                    # TODO: this line seems to kill it
+                    # TODO: this line seems to kill it... but works in standalone so may just be a timeout problem
                     #self.__command('board.cpu[0].instruction-fetch-mode '
                     #               'mode = instruction-fetch-trace')
                     self.__command('run-python-file simics-qsp-arm/caches.py')
@@ -430,6 +430,7 @@ class simics(object):
             self.db.save()
             for message in self.error_messages:
                 if message in buff and 'sn_port_forward_in error' not in buff:
+                    print("Whut? Found {} in {}".format(message, buff))
                     self.db.log_event('Error', 'Simics', message, buff)
                     raise DrSEUsError(message)
             if hanging:
