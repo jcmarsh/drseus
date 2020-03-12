@@ -58,6 +58,8 @@ class simics(object):
             self.board = 'a9x2'
         elif self.db.campaign.architecture == 'qsp-arm':
             self.board = 'qsp-arm'
+        elif self.db.campaign.architecture == 'qsp-ppc':
+            self.board = 'qsp-ppc'
         self.set_targets(self.db.campaign.architecture)
 
     def __str__(self):
@@ -114,12 +116,16 @@ class simics(object):
                     self.__command('DUT_p2020rdb.soc.cpu[1].instruction-fetch-mode '
                                    'mode = instruction-fetch-trace')
                     self.__command('run-python-file simics-p2020rdb/caches.py')
-                else:
-                    # Putting the qsp-arm commands here
+                elif self.board == 'qsp-arm':
                     # TODO: this line seems to kill it... but works in standalone so may just be a timeout problem
                     #self.__command('board.cpu[0].instruction-fetch-mode '
                     #               'mode = instruction-fetch-trace')
                     self.__command('run-python-file simics-qsp-arm/caches.py')
+                elif self.board == 'qsp-ppc':
+                    # TODO: test this line
+                    #self.__command('board.cpu[0].instruction-fetch-mode '
+                    #               'mode = instruction-fetch-trace')
+                    self.__command('run-python-file simics-qsp-ppc/caches.py')
         else:
             buff = self.__command('read-configuration {}'.format(checkpoint))
             if self.db.campaign.caches:
@@ -214,6 +220,14 @@ class simics(object):
             #                           'setenv bootargs root=/dev/ram rw '
             #                           'console=$consoledev,$baudrate; '
             #                           'bootm 0x00800000 - 0x00700000; ')
+        elif self.board == 'qsp-ppc':
+            # TODO needs testing... doing anything here?
+            print("Setting up for the qsp-ppc")
+            self.options.aux_prompt = self.options.dut_prompt = '[root@buildroot ~]#'
+            if self.options.dut_uboot:
+                self.options.dut_uboot += '; '
+            if self.options.aux_uboot:
+                self.options.aux_uboot += '; '
         elif self.board == 'a9x2':
             self.options.aux_prompt = self.options.dut_prompt = '\n#'
             if self.options.dut_uboot:
@@ -254,6 +268,9 @@ class simics(object):
                 #self.__command('$bash_prompt = "root@qsp-arm:~#"')
                 #self.__command('$passwd = ""')
                 #self.__command('board.phys_mem.load-file $initrd_image $initrd_addr')
+                pass
+            elif self.board == 'qsp-ppc':
+                # TODO: Needed?
                 pass
             elif self.board == 'a9x2':
                 self.__command('DUT_a9x2.coretile.mpcore.phys_mem.load-file '
