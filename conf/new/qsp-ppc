@@ -1,0 +1,10 @@
+@conf/qsp-ppc
+--no_rsa
+--simicsfs
+new
+--arch
+qsp-ppc
+--simics
+--caches
+--ckpts
+50
