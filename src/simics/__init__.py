@@ -122,9 +122,8 @@ class simics(object):
                     #               'mode = instruction-fetch-trace')
                     self.__command('run-python-file simics-qsp-arm/caches.py')
                 elif self.board == 'qsp-ppc':
-                    # TODO: test this line
-                    #self.__command('board.cpu[0].instruction-fetch-mode '
-                    #               'mode = instruction-fetch-trace')
+                    self.__command('board.cpu[0].instruction-fetch-mode '
+                                   'mode = instruction-fetch-trace')
                     self.__command('run-python-file simics-qsp-ppc/caches.py')
         else:
             buff = self.__command('read-configuration {}'.format(checkpoint))
@@ -226,6 +225,7 @@ class simics(object):
             self.options.aux_prompt = self.options.dut_prompt = '[root@buildroot ~]#'
             if self.options.dut_uboot:
                 self.options.dut_uboot += '; '
+            self.options.dut_uboot += ('boot;')
             if self.options.aux_uboot:
                 self.options.aux_uboot += '; '
         elif self.board == 'a9x2':
@@ -447,9 +447,9 @@ class simics(object):
             self.db.save()
             for message in self.error_messages:
                 if message in buff and 'sn_port_forward_in error' not in buff:
-                    print("Whut? Found {} in {}".format(message, buff))
-                    self.db.log_event('Error', 'Simics', message, buff)
-                    raise DrSEUsError(message)
+                    if 'Returning invalid values from attributes will be an error in future Simics versions.' not in buff:
+                        self.db.log_event('Error', 'Simics', message, buff)
+                        raise DrSEUsError(message)
             if hanging:
                 raise DrSEUsError('Timeout reading from Simics')
             return buff
