@@ -369,7 +369,7 @@ class dut(object):
                         'Sent files using FTP', ', '.join(files))
 
         def send_simicsfs():
-            print("Attempting to send files via simicsfs...")
+            # print("Attempting to send files via simicsfs...")
             # mount /host/
             self.command('mount /host', flush=True)
             # remove exisiting files in simicsfs_root first?
@@ -380,8 +380,6 @@ class dut(object):
             # move from /host/ on sim to home?
             self.command('mv /host/* ./', flush=True)
             self.command('ls', flush=True)
-            # Host: Need to move the files to the host directory
-            # Sim: copy from /host/
 
         def send_scp():
             if self.db.campaign.caches:
@@ -555,6 +553,20 @@ class dut(object):
                         'Received file using FTP', file_)
                     return file_path
 
+        def get_simicsfs():
+            print("Getting files via simicsfs...")
+            # mount /host/
+            print("I don't know... what files are we even talking about?")
+            print("File: {}".format(file_))
+            print("Path: {}".format(file_path))
+
+            # In sim, move the file back to the shared dir
+            self.command('cp ./{} /host/'.format(file_))
+            # On the host, move that file from the shared dir to ?
+            copy("./simicsfs_root/{}".format(file_), file_path) # copy from host to simicfs (/host on sim)
+
+            print("Get file (simicsfs) complete?")
+
         def get_scp():
             if self.db.campaign.caches:
                 timeout_ = 1200
@@ -643,6 +655,8 @@ class dut(object):
             get_socket()
         elif self.options.vxworks:
             get_ftp()
+        elif self.options.simicsfs:
+            get_simicsfs()
         else:
             get_scp()
         return file_path
