@@ -5,7 +5,6 @@
 backups
 campaign-data
 devices.json
-fiapps
 lextab.py
 migrations
 openocd
