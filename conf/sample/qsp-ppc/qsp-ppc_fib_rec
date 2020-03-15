@@ -1,0 +1,7 @@
+@conf/new/qsp-ppc
+--cmd
+./fib_rec > out.txt
+--files
+./fib_rec/fib_rec
+--output_file
+out.txt
